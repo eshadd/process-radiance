@@ -4,7 +4,7 @@ import sqlite3
 
 #INPUT
 
-run_name = 'Prototype 14'
+run_name = 'Prototype 15'
 
 ill_json_fn = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/' + run_name + '/run/1-UserScript-0/radiance/output/radout.json'
 rad_csv_fp = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/' + run_name + '/run/1-UserScript-0/radiance/output/'
@@ -17,6 +17,7 @@ sql_tbl = 'ReportVariableWithTime '
 sql_field = 'Value'
 sql_filter_col = 'Name'
 sql_filter_a = ['Site Solar Azimuth Angle', 'Site Solar Altitude Angle', 'Site Sky Diffuse Solar Radiation Luminous Efficacy', 'Site Beam Solar Radiation Luminous Efficacy']
+sql_time = 'TimeIndex, Month, Day, Hour'
 
 #SETUP
 
@@ -30,16 +31,18 @@ sql_crsr = sql_conn.cursor()
 
 #MAIN
 #get solar position
-solar_pos = []
+solar = []
+sql_crsr.execute('SELECT {tm} FROM {tn} WHERE {cn}="{ft}"'.format(tm=sql_time,tn=sql_tbl,cn=sql_filter_col,ft=sql_filter_a[0]))
+solar.append(sql_crsr.fetchall())
 for sql_filter in sql_filter_a:
     sql_crsr.execute('SELECT {fd} FROM {tn} WHERE {cn}="{ft}"'.format(fd=sql_field,tn=sql_tbl,cn=sql_filter_col,ft=sql_filter))
-    solar_pos.append(sql_crsr.fetchall())
+    solar.append(sql_crsr.fetchall())
 sql_conn.close()
 
 #get illuminance map and glare metrics by space
 ill_dat = {}
 illum_hdr = ['bad_dgp', 'bad_raw', 'good_dgp', 'good_raw', 'ext_snsr']
-for hour_dat in ill_d:
+for hr, hour_dat in enumerate(ill_d):
     for spc_nm, spc_ill_dat in hour_dat.items():
 
         grid_ill_dat = spc_ill_dat[0]
@@ -52,23 +55,15 @@ for hour_dat in ill_d:
         bad_glare_metrics = bad_glare[list(bad_glare.keys())[0]]
         good_glare_metrics = good_glare[list(good_glare.keys())[0]]
 
-        hour_ill_dat = [bad_glare_metrics['dgp'], bad_glare_metrics['raw'], good_glare_metrics['dgp'], good_glare_metrics['raw']]
+        hour_ill_dat = [solar[0][hr][0], solar[0][hr][1], solar[0][hr][2], solar[0][hr][3], \
+            bad_glare_metrics['dgp'], good_glare_metrics['dgp'], bad_glare_metrics['raw'], good_glare_metrics['raw']]
         hour_ill_dat.extend(grid_ill_dat)
 
         ill_dat.setdefault(spc_nm, []).append(hour_ill_dat)
 
-#combine data ill_dat and all_dat ;)
-rad_dat = {}
-for spc_nm, spc_ill_dat in ill_dat.items():
-    for hr, ill_dat in enumerate(spc_ill_dat):
-        all_dat = [hr]
-        all_dat.extend(solar_pos[hr])
-        all_dat.extend(ill_dat)
-        rad_dat.setdefault(spc_nm, []).append(all_dat)
-
 #OUTPUT
 
-for spc_nm, spc_dat in rad_dat.items():
+for spc_nm, spc_dat in ill_dat.items():
     with open(rad_csv_fp+spc_nm.lower()+'.csv', 'w', newline='') as f_w:
         csv.writer(f_w, dialect='excel').writerows(spc_dat)
 
