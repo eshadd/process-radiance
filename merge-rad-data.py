@@ -16,7 +16,7 @@ sql = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/' + run_name + '/run/1-User
 sql_tbl = 'ReportVariableWithTime '
 sql_field = 'Value'
 sql_filter_col = 'Name'
-sql_filter_a = ['Site Solar Azimuth Angle', 'Site Solar Altitude Angle']
+sql_filter_a = ['Site Solar Azimuth Angle', 'Site Solar Altitude Angle', 'Site Sky Diffuse Solar Radiation Luminous Efficacy', 'Site Beam Solar Radiation Luminous Efficacy']
 
 #SETUP
 
@@ -29,6 +29,12 @@ sql_conn = sqlite3.connect(sql)
 sql_crsr = sql_conn.cursor()
 
 #MAIN
+#get solar position
+solar_pos = []
+for sql_filter in sql_filter_a:
+    sql_crsr.execute('SELECT {fd} FROM {tn} WHERE {cn}="{ft}"'.format(fd=sql_field,tn=sql_tbl,cn=sql_filter_col,ft=sql_filter))
+    solar_pos.append(sql_crsr.fetchall())
+sql_conn.close()
 
 #get illuminance map and glare metrics by space
 ill_dat = {}
@@ -50,17 +56,6 @@ for hour_dat in ill_d:
         hour_ill_dat.extend(grid_ill_dat)
 
         ill_dat.setdefault(spc_nm, []).append(hour_ill_dat)
-
-#get solar position
-solar_pos = []
-for sql_filter in sql_filter_a:
-    sql_crsr.execute('SELECT {fd} FROM {tn} WHERE {cn}="{ft}"'.format(fd=sql_field,tn=sql_tbl,cn=sql_filter_col,ft=sql_filter))
-    solar_pos.append(sql_crsr.fetchall())
-
-#reformat it
-solar_pos = [[solar_pos[j][i][0] for j in range(len(solar_pos))] for i in range(len(solar_pos[0]))]
-
-sql_conn.close()
 
 #combine data ill_dat and all_dat ;)
 rad_dat = {}
