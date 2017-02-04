@@ -20,17 +20,19 @@ for az_set in az_set_a:
     
     for view_config in view_config_a:
         for clrstry_config in clrstry_config_a:
+            shd_runs = []
             for wn_shade_config in shade_config_a:
                 
                 ill_by_config.extend(ill_by_shd)
                 ill_by_shd = []
-                run_nm = ' '.join([az_set_fmtd, view_config, wn_shade_config, clrstry_config, wn_shade_config])
+                shd_runs.append(' '.join([az_set_fmtd, view_config, wn_shade_config, clrstry_config, wn_shade_config]))
 
-                for cz in cz_a:
+            for cz in cz_a:
+                for run_idx in range(len(shd_runs)):                
+                    shd_runs[run_idx] = shd_runs[run_idx] + ' ' + format(cz, '02d')
 
-                    run_nm = run_nm + ' ' + format(cz, '02d')
-                    if os.path.isdir(analysis_path + run_nm):
-                        ill_by_shd.append(distilry.run_distillr(run_nm, analysis_path))
+                if os.path.isdir(analysis_path + run_nm):
+                    ill_by_shd.append(distilry.run_distillr(shd_runs, analysis_path))
 
 #OUTPUT
 
