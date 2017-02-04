@@ -1,8 +1,10 @@
 import os
+import csv
+
 import distill_rad_data as distilry
 
 analysis_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/'
-out_folder_path = analysis_path + '/Output/'
+out_path = analysis_path + '/Output/'
 az_set_a = [[90, 180, 270], [90, 135, 180, 235, 270]]
 view_config_a = ['WN', 'SL']
 clrstry_config_a = ['NC', 'WN', 'LL', '3M']
@@ -20,23 +22,22 @@ for az_set in az_set_a:
     
     for view_config in view_config_a:
         for clrstry_config in clrstry_config_a:
-            shd_runs = []
             for wn_shade_config in shade_config_a:
-                
-                ill_by_config.extend(ill_by_shd)
-                ill_by_shd = []
-                shd_runs.append(' '.join([az_set_fmtd, view_config, wn_shade_config, clrstry_config, wn_shade_config]))
+                run_nm = ' '.join([az_set_fmtd, view_config, wn_shade_config, clrstry_config, wn_shade_config])
+                has_ill_dat = False
+                for cz in cz_a:
 
-            for cz in cz_a:
-                for run_idx in range(len(shd_runs)):                
-                    shd_runs[run_idx] = shd_runs[run_idx] + ' ' + format(cz, '02d')
+                    run_nm = run_nm + ' ' + format(cz, '02d')
+                    if os.path.isdir(analysis_path + run_nm):
+                        ill_by_shd.extend(distilry.run_distillr(run_nm, analysis_path))
+                        has_ill_dat = True
+                    run_nm = run_nm[:-3]
 
-                if os.path.isdir(analysis_path + run_nm):
-                    ill_by_shd.append(distilry.run_distillr(shd_runs, analysis_path))
+                #OUTPUT
 
-#OUTPUT
-
-for spc_nm, spc_dat in ill_dat.items():
-    with open(rad_csv_fp+run_name+'_'+spc_nm.lower()+'.csv', 'w', newline='') as f_w:
-        csv.writer(f_w, dialect='excel').writerows(spc_dat)
-
+                if has_ill_dat:
+                    ill_dir = out_path + view_config + ' ' + clrstry_config + '/'
+                    if not os.path.exists(ill_dir):
+                        os.makedirs(ill_dir)
+                    with open(ill_dir + wn_shade_config + '.csv', 'w', newline='') as f_w:
+                        csv.writer(f_w, dialect='excel').writerows(ill_by_shd)
