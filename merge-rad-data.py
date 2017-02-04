@@ -5,10 +5,10 @@ import sqlite3
 #INPUT
 
 run_name = '090 135 180 235 270 WN NS NC NS 03'
+analysis_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/'
 
-ill_json_fn = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/' + run_name + '/run/1-UserScript-0/radiance/output/radout.json'
-rad_csv_fp = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
-spc_field = 'T2419_CASE_Spc'
+ill_json_fn = analysis_path + run_name + '/run/1-UserScript-0/radiance/output/radout.json'
+rad_csv_fp = analysis_path + '/Output/'
 
 bad_glare_field = 'Bad_Glare_Snsr'
 #good_glare_field = 'Good_Glare_Snsr'
@@ -23,7 +23,7 @@ good_occ_start = 17
 bad_occ_end = 17
 good_occ_end = 17
 
-sql = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/' + run_name + '/run/1-UserScript-0/radiance/sql/eplusout.sql'    
+sql = analysis_path + run_name + '/run/1-UserScript-0/radiance/sql/eplusout.sql'    
 sql_tbl = 'ReportVariableWithTime '
 sql_field = 'Value'
 sql_filter_col = 'Name'
@@ -34,13 +34,13 @@ sql_time = 'TimeIndex, Month, Day, Hour, DayType'
 
 with open(ill_json_fn) as ill_f:
     ill_raw_d = json.load(ill_f)
-    ill_raw_d = ill_raw_d.pop('all_hours')
-    
+    ill_raw_a = ill_raw_d.pop('all_hours')
+
 #reformat so main loop can loop by space.
-ill_d = {}
-for hour_dat in ill_raw_d:
-    for spc_nm, spc_ill_dat in hour_dat.items():
-        ill_d.setdefault(spc_nm, []).append([spc_ill_dat[0], spc_ill_dat[2]])
+ill_d = {spc_nm: [] for spc_nm in ill_raw_a[0].keys()}
+for hr_dat in ill_raw_a:
+     for spc_nm, spc_dat in hr_dat.items():
+        ill_d[spc_nm].append([spc_dat[0], spc_dat[2]])
 
 # Connect to the database file
 sql_conn = sqlite3.connect(sql)
@@ -58,7 +58,7 @@ for sql_filter in sql_filter_a:
 sql_conn.close()
 
 #get illuminance map and glare metrics by space
-ill_dat = {}
+ill_dat = []
 for spc_nm, spc_ill_dat in ill_d.items():
 
     bad_shaded_hrs = 0
@@ -125,11 +125,12 @@ for spc_nm, spc_ill_dat in ill_d.items():
                 bad_shaded = 0
                 bad_shaded_hrs = 0
 
-        hour_ill_dat = [solar[0][hr][0], solar[0][hr][1], solar[0][hr][2], time_of_day, day_type, \
-            bad_dgp, bad_shaded, good_dgp, good_shaded]
+        form_dat = spc_nm.split('_')
+        hour_ill_dat = [int(form_dat[0]), int(form_dat[1]), solar[0][hr][0], solar[0][hr][1], solar[0][hr][2], time_of_day, day_type, 
+                        bad_dgp, good_dgp, bad_shaded, good_shaded]
         hour_ill_dat.extend(grid_ill_dat)
 
-        ill_dat.setdefault(spc_nm, []).append(hour_ill_dat)
+        ill_dat.append(hour_ill_dat)
 
 #OUTPUT
 

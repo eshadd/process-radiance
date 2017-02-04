@@ -1,6 +1,6 @@
 import os
 
-run_folder_parent_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/'
+run_folder_parent_path = analysis_path
 out_folder_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
 az_set_a = [[90, 180, 270], [90, 135, 180, 235, 270]]
 view_config_a = ['WN', 'SL']
@@ -18,8 +18,8 @@ for az_set in az_set_a:
             for clrstry_config in clrstry_config_a:
                 for shade_config in shade_config_a:
                     for cz in cz_a:
-                        run_folder = ' '.join([az_set_fmtd, view_config, shade_config, clrstry_config, shade_config, format(cz, '02d')])
-                        if os.path.isdir(run_folder_parent_path+run_folder):
+                        run_nm = ' '.join([az_set_fmtd, view_config, shade_config, clrstry_config, shade_config, format(cz, '02d')])
+                        if os.path.isdir(run_folder_parent_path + run_nm):
                             subfolder = view_config + ' ' + clrstry_config
                             print(run_folder)
 
