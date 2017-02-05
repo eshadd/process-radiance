@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-def run_distillr(run_name, analysis_path):
+def run_distillr(run_name, climate_zone, view_config, clrstry_config, analysis_path):
 
     #INPUT
 
@@ -55,7 +55,7 @@ def run_distillr(run_name, analysis_path):
     sql_conn.close()
 
     #get illuminance map and glare metrics by space
-    ill_dat = [['Az', 'WWR', 'Ann Hr', 'Month', 'Day', 'Hr', 'Day Type', 'Bad DGP', 'Good DGP', 'Bad Shaded?', 'Good Shaded?', '1ry DS', '2ry DS']]
+    ill_dat = [['CZ', 'View', 'Clrstry', 'Az', 'WWR', 'Ann Hr', 'Month', 'Day', 'Hr', 'Day Type', 'Bad DGP', 'Good DGP', 'Bad Shaded?', 'Good Shaded?', '1ry DS', '2ry DS']]
     for spc_nm, spc_ill_dat in ill_d.items():
 
         form_dat = spc_nm.split('_')
@@ -124,7 +124,7 @@ def run_distillr(run_name, analysis_path):
                     bad_shaded = 0
                     bad_shaded_hrs = 0
 
-            hr_ill_dat = [int(form_dat[0]), int(form_dat[1]), solar[0][hr][0], solar[0][hr][1], solar[0][hr][2], time_of_day, day_type, 
+            hr_ill_dat = [climate_zone, view_config, clrstry_config, int(form_dat[0]), int(form_dat[1]), solar[0][hr][0], solar[0][hr][1], solar[0][hr][2], time_of_day, day_type, 
                             bad_dgp, good_dgp, bad_shaded, good_shaded, grid_ill_dat[0], grid_ill_dat[13]]
 
             ill_dat.append(hr_ill_dat)
