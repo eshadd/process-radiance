@@ -1,3 +1,4 @@
+#pylint: skip-file
 import csv
 import sqlite3
 import os
@@ -37,7 +38,7 @@ def run_distillr(wthr_fn, run_name, out_path):
     #MAIN
 
     #Loop through radiance data files
-    rad_dat = [['Weather', 'View', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', 'Month', 'Day', 'Hr', \
+    rad_dat = [['Weather', 'Case', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', 'Month', 'Day', 'Hr', \
                 'Sensor', 'DGP', '1ry Daylt', '2ry Daylt', 'Bad Shaded?', 'Good Shaded?']]
     rad_hr_dat = []
     for glr_fnm, glr_fref, map_fref in ill_fref_a:        
@@ -64,92 +65,60 @@ def run_distillr(wthr_fn, run_name, out_path):
                     rad_hr_dat.append(spc_wwr)
 
                     rad_hr_dat.append(ann_hr)
-                    rad_hr_dat.append(day_type_a[ann_hr % 7])
+                    day_type = day_type_a[ann_hr % 7]
+                    rad_hr_dat.append(day_type)
 
-                    #glare and sensors
+                    #glare
                     rad_hr_dat.extend(glr_rw[:5])
+
+                    if time_of_day >= bad_occ_start and time_of_day <= bad_occ_end:
+                        if bad_dgp > bad_glare_threshold:
+                            bad_shaded = 1
+                            bad_shaded_hrs += 1
+                        else:
+                            #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
+                            if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in bad_shade_check_times):
+                                bad_shaded = 0
+                                bad_shaded_hrs = 0
+                            else:
+                                bad_shaded = 1
+                                bad_shaded_hrs += 1
+                    else:
+                        if bad_shaded == 1:
+                            bad_shaded_hrs +=1
+                        else:
+                            bad_shaded = 0
+                            bad_shaded_hrs = 0
+
+                    if time_of_day >= good_occ_start and time_of_day <= good_occ_end:
+                        if good_dgp > good_glare_threshold:
+                            good_shaded = 1
+                            good_shaded_hrs += 1
+                        else:
+                            #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
+                            if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Sat', 'Sun ', 'Hol'] and time_of_day in good_shade_check_times):
+                                good_shaded = 0
+                                good_shaded_hrs = 0
+                            else:
+                                good_shaded = 1
+                                good_shaded_hrs += 1
+                    else:
+                        if good_shaded == 1:
+                            good_shaded_hrs +=1
+                        else:
+                            good_shaded = 0
+                            good_shaded_hrs = 0
+
+                    #sensors
                     map_a = next(map_rdr)
                     rad_hr_dat.append(map_a[6])
                     rad_hr_dat.append(map_a[-1])
 
-                    #append and teardown
+                    #append and reset
                     rad_dat.append(rad_hr_dat)
                     rad_hr_dat = []
 
-
-    #get illuminance map and glare metrics by space
-    for spc_nm, spc_ill_dat in ill_d.items():
-
-        form_dat = spc_nm.split('_')
-
-        bad_shaded_hrs = 0
-        good_shaded_hrs = 0
-        bad_shaded = 0
-        good_shaded = 0
-        for hr, hour_dat in enumerate(spc_ill_dat):
-
-            grid_ill_dat = hour_dat[0]
-            sensor_glare_dat = hour_dat[1]
-        
-            glare_field_a = list(sensor_glare_dat.keys())
-            bad_glare_idx = glare_field_a.index([bs for bs in list(sensor_glare_dat.keys()) if bad_glare_field in bs][0])
-            bad_glare = sensor_glare_dat[glare_field_a[bad_glare_idx]]
-            good_glare = sensor_glare_dat[glare_field_a[int(not bad_glare_idx)]]
-        
-            #assumes only one view
-            bad_glare_metrics = bad_glare[list(bad_glare.keys())[0]]
-            good_glare_metrics = good_glare[list(good_glare.keys())[0]]
-
-            bad_dgp = bad_glare_metrics['dgp']
-            good_dgp = good_glare_metrics['dgp']
-
-            day_type = solar[0][hr][4]
-            time_of_day = solar[0][hr][3]
-
-            if time_of_day >= bad_occ_start and time_of_day <= bad_occ_end:
-                if bad_dgp > bad_glare_threshold:
-                    bad_shaded = 1
-                    bad_shaded_hrs += 1
-                else:
-                    #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                    if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Saturday', 'Sunday', 'Holiday'] and time_of_day in bad_shade_check_times):
-                        bad_shaded = 0
-                        bad_shaded_hrs = 0
-                    else:
-                        bad_shaded = 1
-                        bad_shaded_hrs += 1
-            else:
-                if bad_shaded == 1:
-                    bad_shaded_hrs +=1
-                else:
-                    bad_shaded = 0
-                    bad_shaded_hrs = 0
-
-            if time_of_day >= good_occ_start and time_of_day <= good_occ_end:
-                if good_dgp > good_glare_threshold:
-                    good_shaded = 1
-                    good_shaded_hrs += 1
-                else:
-                    #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                    if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Saturday', 'Sunday', 'Holiday'] and time_of_day in good_shade_check_times):
-                        good_shaded = 0
-                        good_shaded_hrs = 0
-                    else:
-                        good_shaded = 1
-                        good_shaded_hrs += 1
-            else:
-                if good_shaded == 1:
-                    good_shaded_hrs +=1
-                else:
-                    good_shaded = 0
-                    good_shaded_hrs = 0
-
-            hr_ill_dat = [climate_zone, view_config, clrstry_config, int(form_dat[0]), int(form_dat[1]), solar[0][hr][0], solar[0][hr][1], solar[0][hr][2], time_of_day, day_type, 
-                            bad_dgp, good_dgp, bad_shaded, good_shaded, grid_ill_dat[0], grid_ill_dat[13]]
-
-            ill_dat.append(hr_ill_dat)
-
-    return ill_dat
+    return (wn_shd, rad_dat)
     
 def run_distillr_expanded(run_name, climate_zone, view_config, clrstry_config, analysis_path):
 
@@ -240,7 +209,7 @@ def run_distillr_expanded(run_name, climate_zone, view_config, clrstry_config, a
                     bad_shaded_hrs += 1
                 else:
                     #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                    if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Saturday', 'Sunday', 'Holiday'] and time_of_day in bad_shade_check_times):
+                    if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in bad_shade_check_times):
                         bad_shaded = 0
                         bad_shaded_hrs = 0
                     else:
@@ -259,7 +228,7 @@ def run_distillr_expanded(run_name, climate_zone, view_config, clrstry_config, a
                     good_shaded_hrs += 1
                 else:
                     #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                    if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Saturday', 'Sunday', 'Holiday'] and time_of_day in good_shade_check_times):
+                    if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Sat', 'Sun ', 'Hol'] and time_of_day in good_shade_check_times):
                         good_shaded = 0
                         good_shaded_hrs = 0
                     else:
