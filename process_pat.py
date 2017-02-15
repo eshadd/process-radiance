@@ -6,7 +6,7 @@ import csv
 import sqlite3
 import os
 
-pat_path = 'C:/Users/Suyeyasu/Desktop/05 to 01 Shades - Copy/'
+pat_path = 'C:/Users/Suyeyasu/Desktop/Runs/05 to 01 Shades - 08/'
 pat_db = 'project.osp'
 
 # Connect to the database file
@@ -25,9 +25,9 @@ pat_db_conn.close()
 
 results_by_shd = {}
 for run_name, run_path in run_path_a:
-    run_idx = int(run_path.split('/')[-1].replace('dataPoint', ''))
-    rad_out_path = run_path + '/' + str(9 * (run_idx - 1)) + '-Userscript-0/radiance/output/'
-    rad_out_path = rad_out_path.replace('C:/Determinant_J/Projects/T2419 CASE/Analysis', 'C:/Users/Suyeyasu/Desktop')
+    dat_pt = run_path.split('/')[-1]
+    run_idx = int(dat_pt.replace('dataPoint', ''))
+    rad_out_path = pat_path + dat_pt + '/' + str(9 * (run_idx - 1)) + '-Userscript-0/radiance/output/'
     if os.path.exists(rad_out_path):
         rad_dat = distill_rad_data.run_distillr(wthr_fn, run_name, rad_out_path)
         results_by_shd.setdefault(rad_dat[0], [['Weather', 'Case', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', \
