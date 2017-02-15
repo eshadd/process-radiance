@@ -22,6 +22,10 @@ def run_distillr(wthr_fn, run_name, out_path):
     good_occ_start = 8
     bad_occ_end = 17
     good_occ_end = 17
+    bad_shaded = 0
+    bad_shaded_hrs = 0
+    good_shaded = 0
+    good_shaded_hrs = 0
 
     day_type_a = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'] 
     
@@ -29,7 +33,7 @@ def run_distillr(wthr_fn, run_name, out_path):
 
     config = run_name.split(' ')
     wn_case = config[0]
-    wn_shd = config[1]
+    wn_shd = config[1] if len(config) > 1 else 'NS'
     rad_set = [wthr_fn, wn_case, wn_shd]
     
     ill_dir_a = [ref for ref in os.walk(out_path + 'ts/')][2::2]
@@ -38,8 +42,7 @@ def run_distillr(wthr_fn, run_name, out_path):
     #MAIN
 
     #Loop through radiance data files
-    rad_dat = [['Weather', 'Case', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', 'Month', 'Day', 'Hr', \
-                'Sensor', 'DGP', '1ry Daylt', '2ry Daylt', 'Bad Shaded?', 'Good Shaded?']]
+    rad_dat = []
     rad_hr_dat = []
     for glr_fnm, glr_fref, map_fref in ill_fref_a:        
 
@@ -71,6 +74,10 @@ def run_distillr(wthr_fn, run_name, out_path):
                     #glare
                     rad_hr_dat.extend(glr_rw[:5])
 
+                    time_of_day = int(glr_rw[2].replace(':00:00',''))
+                    bad_dgp = float(glr_rw[4])
+                    good_dgp = float(glr_rw[4])
+
                     if time_of_day >= bad_occ_start and time_of_day <= bad_occ_end:
                         if bad_dgp > bad_glare_threshold:
                             bad_shaded = 1
@@ -90,6 +97,8 @@ def run_distillr(wthr_fn, run_name, out_path):
                             bad_shaded = 0
                             bad_shaded_hrs = 0
 
+                    rad_hr_dat.append(bad_shaded)
+
                     if time_of_day >= good_occ_start and time_of_day <= good_occ_end:
                         if good_dgp > good_glare_threshold:
                             good_shaded = 1
@@ -108,6 +117,8 @@ def run_distillr(wthr_fn, run_name, out_path):
                         else:
                             good_shaded = 0
                             good_shaded_hrs = 0
+                    
+                    rad_hr_dat.append(good_shaded)
 
                     #sensors
                     map_a = next(map_rdr)
