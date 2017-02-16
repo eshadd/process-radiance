@@ -3,12 +3,13 @@ import csv
 import sqlite3
 import os
 
-def run_distillr(wthr_fn, run_name, out_path):
+def run_distillr(run_name, out_path, wthr_fn, tdv_fref):
 
     #INPUT
 
     nglr_hdr_rows = 3
     nmap_hdr_rows = 4
+    ntdv_hdr_rows = 3
     
     bad_glare_field = 'Bad_Glare_Snsr'
     #good_glare_field = 'Good_Glare_Snsr'
@@ -39,6 +40,9 @@ def run_distillr(wthr_fn, run_name, out_path):
     ill_dir_a = [ref for ref in os.walk(out_path + 'ts/')][2::2]
     ill_fref_a = [[fn_a[0], path + '/' + fn_a[0], path + '/' + fn_a[1]] for path, blank, fn_a in ill_dir_a]
 
+    cz_spos = wthr_fn.find('CZ') + 2
+    cz = int(wthr_fn[cz_spos:cz_spos+2])
+
     #MAIN
 
     #Loop through radiance data files
@@ -59,75 +63,84 @@ def run_distillr(wthr_fn, run_name, out_path):
                 for hdr_rw in range(nmap_hdr_rows):
                     next(map_rdr)
                 
-                #aggregate data
-                for ann_hr, glr_rw in enumerate(glr_rdr):
+                with open(tdv_fref) as fr:
+                    tdv_rdr = csv.reader(fr)
+                    for hdr_rw in range(ntdv_hdr_rows):
+                        next(tdv_rdr)
+                
+                    #aggregate data
+                    for ann_hr, glr_rw in enumerate(glr_rdr):
                     
-                    #weather, configuration
-                    rad_hr_dat.extend(rad_set)
-                    rad_hr_dat.append(spc_az)
-                    rad_hr_dat.append(spc_wwr)
+                        #weather, configuration
+                        rad_hr_dat.extend(rad_set)
+                        rad_hr_dat.append(spc_az)
+                        rad_hr_dat.append(spc_wwr)
 
-                    rad_hr_dat.append(ann_hr)
-                    day_type = day_type_a[ann_hr % 7]
-                    rad_hr_dat.append(day_type)
+                        rad_hr_dat.append(ann_hr)
+                        day_type = day_type_a[ann_hr % 7]
+                        rad_hr_dat.append(day_type)
 
-                    #glare
-                    rad_hr_dat.extend(glr_rw[:5])
+                        #glare
+                        rad_hr_dat.extend(glr_rw[:5])
 
-                    time_of_day = int(glr_rw[2].replace(':00:00',''))
-                    bad_dgp = float(glr_rw[4])
-                    good_dgp = float(glr_rw[4])
+                        time_of_day = int(glr_rw[2].replace(':00:00',''))
+                        bad_dgp = float(glr_rw[4])
+                        good_dgp = float(glr_rw[4])
 
-                    if time_of_day >= bad_occ_start and time_of_day <= bad_occ_end:
-                        if bad_dgp > bad_glare_threshold:
-                            bad_shaded = 1
-                            bad_shaded_hrs += 1
-                        else:
-                            #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                            if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in bad_shade_check_times):
-                                bad_shaded = 0
-                                bad_shaded_hrs = 0
-                            else:
+                        if time_of_day >= bad_occ_start and time_of_day <= bad_occ_end:
+                            if bad_dgp > bad_glare_threshold:
                                 bad_shaded = 1
                                 bad_shaded_hrs += 1
-                    else:
-                        if bad_shaded == 1:
-                            bad_shaded_hrs +=1
-                        else:
-                            bad_shaded = 0
-                            bad_shaded_hrs = 0
-
-                    rad_hr_dat.append(bad_shaded)
-
-                    if time_of_day >= good_occ_start and time_of_day <= good_occ_end:
-                        if good_dgp > good_glare_threshold:
-                            good_shaded = 1
-                            good_shaded_hrs += 1
-                        else:
-                            #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                            if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Sat', 'Sun ', 'Hol'] and time_of_day in good_shade_check_times):
-                                good_shaded = 0
-                                good_shaded_hrs = 0
                             else:
+                                #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
+                                if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in bad_shade_check_times):
+                                    bad_shaded = 0
+                                    bad_shaded_hrs = 0
+                                else:
+                                    bad_shaded = 1
+                                    bad_shaded_hrs += 1
+                        else:
+                            if bad_shaded == 1:
+                                bad_shaded_hrs +=1
+                            else:
+                                bad_shaded = 0
+                                bad_shaded_hrs = 0
+
+                        rad_hr_dat.append(bad_shaded)
+
+                        if time_of_day >= good_occ_start and time_of_day <= good_occ_end:
+                            if good_dgp > good_glare_threshold:
                                 good_shaded = 1
                                 good_shaded_hrs += 1
-                    else:
-                        if good_shaded == 1:
-                            good_shaded_hrs +=1
+                            else:
+                                #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
+                                if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Sat', 'Sun ', 'Hol'] and time_of_day in good_shade_check_times):
+                                    good_shaded = 0
+                                    good_shaded_hrs = 0
+                                else:
+                                    good_shaded = 1
+                                    good_shaded_hrs += 1
                         else:
-                            good_shaded = 0
-                            good_shaded_hrs = 0
+                            if good_shaded == 1:
+                                good_shaded_hrs +=1
+                            else:
+                                good_shaded = 0
+                                good_shaded_hrs = 0
                     
-                    rad_hr_dat.append(good_shaded)
+                        rad_hr_dat.append(good_shaded)
 
-                    #sensors
-                    map_a = next(map_rdr)
-                    rad_hr_dat.append(map_a[6])
-                    rad_hr_dat.append(map_a[-1])
+                        #sensors
+                        map_a = next(map_rdr)
+                        rad_hr_dat.append(map_a[6])
+                        rad_hr_dat.append(map_a[-1])
 
-                    #append and reset
-                    rad_dat.append(rad_hr_dat)
-                    rad_hr_dat = []
+                        #tdv
+                        tdv_a = next(tdv_rdr)
+                        rad_hr_dat.append(tdv_a[cz])
+
+                        #append and reset
+                        rad_dat.append(rad_hr_dat)
+                        rad_hr_dat = []
 
     return (wn_shd, rad_dat)
     

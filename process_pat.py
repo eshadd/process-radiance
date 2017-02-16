@@ -6,7 +6,10 @@ import csv
 import sqlite3
 import os
 
-pat_path = 'C:/Users/Suyeyasu/Desktop/Runs/05 to 01 Shades - 08/'
+pat_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/05 to 01 Shades'
+out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
+tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
+
 pat_db = 'project.osp'
 
 # Connect to the database file
@@ -29,12 +32,11 @@ for run_name, run_path in run_path_a:
     run_idx = int(dat_pt.replace('dataPoint', ''))
     rad_out_path = pat_path + dat_pt + '/' + str(9 * (run_idx - 1)) + '-Userscript-0/radiance/output/'
     if os.path.exists(rad_out_path):
-        rad_dat = distill_rad_data.run_distillr(wthr_fn, run_name, rad_out_path)
+        rad_dat = distill_rad_data.run_distillr(run_name, rad_out_path, wthr_fn, tdv_fref)
         results_by_shd.setdefault(rad_dat[0], [['Weather', 'Case', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', \
     'Month', 'Day', 'Hr', 'Sensor', 'DGP', 'Bad Shaded?', 'Good Shaded?', '1ry Daylt', '2ry Daylt']]).extend(rad_dat[1])
 
 for wn_shd, results in results_by_shd.items():
-    out_path = pat_path + wthr_fn[:-4] + '/'
     if not os.path.exists(out_path):
         os.makedirs(out_path)
     with open(out_path + wn_shd + '.csv', 'w', newline='') as f_w:
