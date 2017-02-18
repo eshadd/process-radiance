@@ -3,7 +3,7 @@ import csv
 import sqlite3
 import os
 
-def run_distillr(run_name, out_path, wthr_fn, tdv_fref):
+def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
 
     #INPUT
 
@@ -11,8 +11,6 @@ def run_distillr(run_name, out_path, wthr_fn, tdv_fref):
     nmap_hdr_rows = 4
     ntdv_hdr_rows = 3
     
-    bad_glare_field = 'Bad_Glare_Snsr'
-    #good_glare_field = 'Good_Glare_Snsr'
     bad_glare_threshold = 0.4
     good_glare_threshold = 0.6
     bad_min_shade_period = 21*24
@@ -29,6 +27,17 @@ def run_distillr(run_name, out_path, wthr_fn, tdv_fref):
     good_shaded_hrs = 0
 
     day_type_a = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'] 
+
+    min_lamp_pwr = 0.2
+    pwr_slope = 1
+    #office sched
+    day_type_ltg_sched = {'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 1, 'Sun': 2}
+    ltg_sched_a = [
+        [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.3, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.35, 0.3, 0.3, 0.2, 0.2, 0.1, 0.05],
+        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.3, 0.3, 0.3, 0.3, 0.15, 0.15, 0.15, 0.15, 0.15, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+            ]
+
     
     #SETUP
 
@@ -131,12 +140,17 @@ def run_distillr(run_name, out_path, wthr_fn, tdv_fref):
 
                         #sensors
                         map_a = next(map_rdr)
-                        rad_hr_dat.append(map_a[6])
-                        rad_hr_dat.append(map_a[-1])
+                        prim_zn_ill = float(map_a[6])
+                        secd_zn_ill = float(map_a[-1])
+                        rad_hr_dat.append(prim_zn_ill)
+                        rad_hr_dat.append(secd_zn_ill)
 
                         #tdv
-                        tdv_a = next(tdv_rdr)
-                        rad_hr_dat.append(tdv_a[cz])
+                        ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
+                        tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
+                        rad_hr_dat.append(tdv)
+                        rad_hr_dat.extend([max(min(pwr_slope * prim_zn_ill/sp, 1), min_lamp_pwr) * tdv for sp in setpt_a])
+                        rad_hr_dat.extend([max(min(pwr_slope * secd_zn_ill/sp, 1), min_lamp_pwr) * tdv for sp in setpt_a])
 
                         #append and reset
                         rad_dat.append(rad_hr_dat)
