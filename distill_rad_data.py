@@ -2,6 +2,7 @@
 import csv
 import sqlite3
 import os
+import bisect as bs
 
 def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
 
@@ -30,6 +31,10 @@ def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
 
     min_lamp_pwr = 0.2
     pwr_slope = 1
+    #Table 130.1-A 2016
+    multi_level_a = [min_lamp_pwr, 0.4, 0.7, 0.85, 1]
+    bi_level_a = [min_lamp_pwr, 0.7, 1]
+
     #office sched
     day_type_ltg_sched = {'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 1, 'Sun': 2}
     ltg_sched_a = [
@@ -145,12 +150,26 @@ def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
                         rad_hr_dat.append(prim_zn_ill)
                         rad_hr_dat.append(secd_zn_ill)
 
-                        #tdv
-                        ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
-                        tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
-                        rad_hr_dat.append(tdv)
-                        rad_hr_dat.extend([max(min(pwr_slope * prim_zn_ill/sp, 1), min_lamp_pwr) * tdv for sp in setpt_a])
-                        rad_hr_dat.extend([max(min(pwr_slope * secd_zn_ill/sp, 1), min_lamp_pwr) * tdv for sp in setpt_a])
+                        # tdv
+                        # ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
+                        # tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
+                        # rad_hr_dat.append(tdv)
+
+                        # basic power bounding
+                        # pzn_rat_a = [max(min(1 - pwr_slope * prim_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+                        # szn_rat_a = [max(min(1 - pwr_slope * secd_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+
+                        # dimming
+                        # rad_hr_dat.extend([rat * tdv for rat in pzn_rat_a])
+                        # rad_hr_dat.extend([rat * tdv for rat in szn_rat_a])
+
+                        # multi-level
+                        # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in pzn_rat_a])
+                        # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in szn_rat_a])
+
+                        # bi-level
+                        # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in pzn_rat_a])
+                        # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in szn_rat_a])
 
                         #append and reset
                         rad_dat.append(rad_hr_dat)

@@ -6,7 +6,7 @@ import csv
 import sqlite3
 import os
 
-pat_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/05 to 01 Shades/'
+pat_path = 'E:/05 to 01 Shades - 12/'
 out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
 tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
@@ -19,7 +19,7 @@ pat_db = 'project.osp'
 
 #SETUP
 setpt_hdr_a = []
-for zn in [' 1 ', '2 ']:
+for zn in [' 1 ', ' 2 ']:
     for ctrl in ['Dim', 'Multi', 'Bi']:
         setpt_hdr_a.extend([str(sp) + zn + ctrl for sp in setpt_a])
 
