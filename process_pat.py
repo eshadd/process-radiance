@@ -8,37 +8,43 @@ import os
 
 #INPUT
 
-pat_path = 'E:/05 to 01 Shades - 12/'
+pat_path = 'E:/05 to 01 Shades - 03/'
 out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
 tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
-setpt_a = [50,  200, 300, 500, 750, 1000]
+tech_case_a = ['WN', '1.75SL', '2.0SL', '2.5SL', '3.0SL']
 
 shade_case_d = {
     'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
-        'shd_run': 0.0, 'pzn_ill': 0, 'szn_ill': 0}, 
+        'unshd_run': 'NS', 'shd_run': 0.0}, 
     'good': {'threshold': 0.6, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
-        'shd_run': 'DS', 'pzn_ill': 0, 'szn_ill': 0}
+        'unshd_run': 'NS', 'shd_run': 'DS'}
     }
 
-rad_dat_hdr = ['Weather', 'Case', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', \
-    '1ry Daylt', '2ry Daylt', 'Month', 'Day', 'Hr', 'Sensor', 'DGP', 'TDV', 'Bad Shaded?', 'Good Shaded?']
+setpt_a = [50,  200, 300, 500, 750, 1000]
+
+rad_dat_hdr = ['Weather', 'Case', 'Az', 'WWR', 'Ann Hr', 'Day Type', \
+    '1ry Daylt', '2ry Daylt', 'Month', 'Day', 'Hr', 'Sensor', 'DGP', 'TDV', 'Bad Shaded?','Good Shaded?']
 
 pat_db = 'project.osp'
 
 #SETUP
 
-case_hdr_a = []
-for zn in [' 1 ', ' 2 ']:
-    for ctrl in ['Dim', 'Multi', 'Bi']:
-        case_hdr_a.extend([str(sp) + zn + ctrl for sp in setpt_a])
+case_d = {tc: {'none': tc + ' NS', 'good': tc + ' DS'} for tc in tech_case_a}
+
+ctrl_hdr_a = []
+for ctrl in ['Dim', 'Multi', 'Bi']:
+    for zn in [' 1 ', ' 2 ']:
+        ctrl_hdr_a.extend([str(sp) + zn + ctrl for sp in setpt_a])
 
 # Connect to the database file
 pat_db_conn = sqlite3.connect(pat_path + pat_db)
 pat_db_crsr = pat_db_conn.cursor()
 
 pat_db_crsr.execute('SELECT name, directory FROM DataPointRecords')
-run_path_a = pat_db_crsr.fetchall()
+#note inconsitency fix: some no shade cases had 'NS', some didn't
+all_run_path_d = {rn if rn[-3]==' ' else rn + ' NS': rp for rn, rp in pat_db_crsr.fetchall()}
+run_path_d = {case: {'none': all_run_path_d[runs['none']], 'good': all_run_path_d[runs['good']]} for case, runs in case_d.items()}
 
 pat_db_crsr.execute('SELECT weatherFileReferenceRecordId FROM AnalysisRecords')
 wthr_file_idx = pat_db_crsr.fetchone()[0]
@@ -48,17 +54,13 @@ wthr_fn = pat_db_crsr.fetchone()[0]
 pat_db_conn.close()
 
 results_by_shd = {}
-for run_name, run_path in run_path_a:
-    dat_pt = run_path.split('/')[-1]
-    run_idx = int(dat_pt.replace('dataPoint', ''))
-    rad_out_path = pat_path + dat_pt + '/' + str(9 * (run_idx - 1)) + '-Userscript-0/radiance/output/'
-    if os.path.exists(rad_out_path):
-        rad_dat = distill_rad_data.run_distillr(run_name, setpt_a, shade_case_d, rad_out_path, wthr_fn, tdv_fref)
-        results_by_shd.setdefault(rad_dat[0], [rad_dat_hdr + case_hdr_a]).extend(rad_dat[1])
+for case, run_path_d in run_path_d.items():
+    rad_dat = distill_rad_data.run_distillr(case, setpt_a, shade_case_d, run_path_d, wthr_fn, tdv_fref)
+    results_by_shd.setdefault(rad_dat[0], [rad_dat_hdr + ctrl_hdr_a]).extend(rad_dat[1])
 
-for wn_shd, results in results_by_shd.items():
+for cz, results in results_by_shd.items():
     if not os.path.exists(out_path):
         os.makedirs(out_path)
-    with open(out_path + wn_shd + '.csv', 'w', newline='') as f_w:
+    with open(out_path + format(cz, '02d') + '.csv', 'w', newline='') as f_w:
         csv.writer(f_w, dialect='excel').writerows(results)
 
