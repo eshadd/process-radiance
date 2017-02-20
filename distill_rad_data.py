@@ -4,7 +4,7 @@ import sqlite3
 import os
 import bisect as bs
 
-def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
+def run_distillr(run_name, setpt_a, shade_case_d, out_path, wthr_fn, tdv_fref):
 
     #INPUT
 
@@ -12,20 +12,21 @@ def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
     nmap_hdr_rows = 4
     ntdv_hdr_rows = 3
     
-    bad_glare_threshold = 0.4
-    good_glare_threshold = 0.6
-    bad_min_shade_period = 21*24
-    good_min_shade_period = 1
-    bad_shade_check_times = [8]
-    good_shade_check_times = [8, 12]
-    bad_occ_start = 8
-    good_occ_start = 8
-    bad_occ_end = 17
-    good_occ_end = 17
-    bad_shaded = 0
-    bad_shaded_hrs = 0
-    good_shaded = 0
-    good_shaded_hrs = 0
+    #bad_glare_threshold = 0.4
+    #good_glare_threshold = 0.6
+    #bad_min_shade_period = 21*24
+    #good_min_shade_period = 1
+    #bad_shade_check_times = [8]
+    #good_shade_check_times = [8, 12]
+    #bad_occ_start = 8
+    #good_occ_start = 8
+    #bad_occ_end = 17
+    #good_occ_end = 17
+
+    #bad_shaded = 0
+    #bad_shaded_hrs = 0
+    #good_shaded = 0
+    #good_shaded_hrs = 0
 
     day_type_a = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'] 
 
@@ -82,66 +83,23 @@ def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
                     for hdr_rw in range(ntdv_hdr_rows):
                         next(tdv_rdr)
                 
+                    #init blinds/shades
+                    for case in ('bad', 'good'):
+                        shade_case_d[case]['shaded'] = 0
+                        shade_case_d[case]['shaded_hrs'] = 0
+
                     #aggregate data
-                    for ann_hr, glr_rw in enumerate(glr_rdr):
-                    
+                    for ann_hr_idx, glr_rw in enumerate(glr_rdr):
+                        ann_hr = ann_hr_idx + 1
+
                         #weather, configuration
                         rad_hr_dat.extend(rad_set)
                         rad_hr_dat.append(spc_az)
                         rad_hr_dat.append(spc_wwr)
 
                         rad_hr_dat.append(ann_hr)
-                        day_type = day_type_a[ann_hr % 7]
+                        day_type = day_type_a[int(ann_hr/24) % 7]
                         rad_hr_dat.append(day_type)
-
-                        #glare
-                        rad_hr_dat.extend(glr_rw[:5])
-
-                        time_of_day = int(glr_rw[2].replace(':00:00',''))
-                        bad_dgp = float(glr_rw[4])
-                        good_dgp = float(glr_rw[4])
-
-                        if time_of_day >= bad_occ_start and time_of_day <= bad_occ_end:
-                            if bad_dgp > bad_glare_threshold:
-                                bad_shaded = 1
-                                bad_shaded_hrs += 1
-                            else:
-                                #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                                if bad_shaded == 0 or (bad_shaded_hrs >= bad_min_shade_period and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in bad_shade_check_times):
-                                    bad_shaded = 0
-                                    bad_shaded_hrs = 0
-                                else:
-                                    bad_shaded = 1
-                                    bad_shaded_hrs += 1
-                        else:
-                            if bad_shaded == 1:
-                                bad_shaded_hrs +=1
-                            else:
-                                bad_shaded = 0
-                                bad_shaded_hrs = 0
-
-                        rad_hr_dat.append(bad_shaded)
-
-                        if time_of_day >= good_occ_start and time_of_day <= good_occ_end:
-                            if good_dgp > good_glare_threshold:
-                                good_shaded = 1
-                                good_shaded_hrs += 1
-                            else:
-                                #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
-                                if good_shaded == 0 or (good_shaded_hrs >= good_min_shade_period and day_type not in ['Sat', 'Sun ', 'Hol'] and time_of_day in good_shade_check_times):
-                                    good_shaded = 0
-                                    good_shaded_hrs = 0
-                                else:
-                                    good_shaded = 1
-                                    good_shaded_hrs += 1
-                        else:
-                            if good_shaded == 1:
-                                good_shaded_hrs +=1
-                            else:
-                                good_shaded = 0
-                                good_shaded_hrs = 0
-                    
-                        rad_hr_dat.append(good_shaded)
 
                         #sensors
                         map_a = next(map_rdr)
@@ -150,26 +108,57 @@ def run_distillr(run_name, setpt_a, out_path, wthr_fn, tdv_fref):
                         rad_hr_dat.append(prim_zn_ill)
                         rad_hr_dat.append(secd_zn_ill)
 
-                        # tdv
-                        # ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
-                        # tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
-                        # rad_hr_dat.append(tdv)
+                        #glare
+                        rad_hr_dat.extend(glr_rw[:5])
 
-                        # basic power bounding
-                        # pzn_rat_a = [max(min(1 - pwr_slope * prim_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
-                        # szn_rat_a = [max(min(1 - pwr_slope * secd_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+                        time_of_day = int(glr_rw[2].replace(':00:00',''))
+                        dgp = float(glr_rw[4])
 
-                        # dimming
-                        # rad_hr_dat.extend([rat * tdv for rat in pzn_rat_a])
-                        # rad_hr_dat.extend([rat * tdv for rat in szn_rat_a])
+                        for case in ('bad', 'good'): #not dict iter so preserve this order.
 
-                        # multi-level
-                        # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in pzn_rat_a])
-                        # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in szn_rat_a])
+                            shading = shade_case_d[case]
 
-                        # bi-level
-                        # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in pzn_rat_a])
-                        # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in szn_rat_a])
+                            if time_of_day >= shading['occ_hrs'][0] and time_of_day <= shading['occ_hrs'][1]:
+                                if dgp > shading['threshold']:
+                                    shading['shaded'] = 1
+                                    shading['shaded_hrs'] += 1
+                                else:
+                                    #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
+                                    if shading['shaded'] == 0 or (shading['shaded_hrs'] >= shading['min_period'] and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in shading['check_times']):
+                                        shading['shaded'] = 0
+                                        shading['shaded_hrs'] = 0
+                                    else:
+                                        shading['shaded'] = 1
+                                        shading['shaded_hrs'] += 1
+                            else:
+                                if shading['shaded'] == 1:
+                                    shading['shaded_hrs'] +=1
+                                else:
+                                    shading['shaded'] = 0
+                                    shading['shaded_hrs'] = 0
+
+                            rad_hr_dat.append(shading['shaded'])
+
+                            # tdv
+                            # ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
+                            # tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
+                            # rad_hr_dat.append(tdv)
+
+                            # basic power bounding
+                            # pzn_rat_a = [max(min(1 - pwr_slope * prim_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+                            # szn_rat_a = [max(min(1 - pwr_slope * secd_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+
+                            # dimming
+                            # rad_hr_dat.extend([rat * tdv for rat in pzn_rat_a])
+                            # rad_hr_dat.extend([rat * tdv for rat in szn_rat_a])
+
+                            # multi-level
+                            # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in pzn_rat_a])
+                            # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in szn_rat_a])
+
+                            # bi-level
+                            # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in pzn_rat_a])
+                            # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in szn_rat_a])
 
                         #append and reset
                         rad_dat.append(rad_hr_dat)
