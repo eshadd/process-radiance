@@ -92,6 +92,15 @@ def run_distillr(run_name, setpt_a, shade_case_d, out_path, wthr_fn, tdv_fref):
                     for ann_hr_idx, glr_rw in enumerate(glr_rdr):
                         ann_hr = ann_hr_idx + 1
 
+                        #init ctrl TDV
+                        ctrl_init = [0 for sp in setpt_a]
+                        pdim_a = ctrl_init
+                        sdim_a = ctrl_init
+                        pmulti_a = ctrl_init
+                        smulti_a = ctrl_init
+                        pbi_a = ctrl_init
+                        sbi_a = ctrl_init
+
                         #weather, configuration
                         rad_hr_dat.extend(rad_set)
                         rad_hr_dat.append(spc_az)
@@ -114,6 +123,11 @@ def run_distillr(run_name, setpt_a, shade_case_d, out_path, wthr_fn, tdv_fref):
                         time_of_day = int(glr_rw[2].replace(':00:00',''))
                         dgp = float(glr_rw[4])
 
+                        #tdv
+                        ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
+                        tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
+                        rad_hr_dat.append(tdv)
+
                         for case in ('bad', 'good'): #not dict iter so preserve this order.
 
                             shading = shade_case_d[case]
@@ -122,43 +136,58 @@ def run_distillr(run_name, setpt_a, shade_case_d, out_path, wthr_fn, tdv_fref):
                                 if dgp > shading['threshold']:
                                     shading['shaded'] = 1
                                     shading['shaded_hrs'] += 1
+                                    pzn_ill = 0.0
+                                    szn_ill = 0.0
                                 else:
                                     #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
                                     if shading['shaded'] == 0 or (shading['shaded_hrs'] >= shading['min_period'] and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in shading['check_times']):
                                         shading['shaded'] = 0
                                         shading['shaded_hrs'] = 0
+                                        pzn_ill = prim_zn_ill
+                                        szn_ill = secd_zn_ill
                                     else:
                                         shading['shaded'] = 1
                                         shading['shaded_hrs'] += 1
+                                        pzn_ill = 0.0
+                                        szn_ill = 0.0
                             else:
                                 if shading['shaded'] == 1:
                                     shading['shaded_hrs'] +=1
+                                    pzn_ill = 0.0
+                                    szn_ill = 0.0
                                 else:
                                     shading['shaded'] = 0
                                     shading['shaded_hrs'] = 0
+                                    pzn_ill = prim_zn_ill
+                                    szn_ill = secd_zn_ill
 
                             rad_hr_dat.append(shading['shaded'])
 
-                            # tdv
-                            # ltg_sched = ltg_sched_a[day_type_ltg_sched[day_type]]
-                            # tdv = float(next(tdv_rdr)[cz]) * ltg_sched[time_of_day - 1]
-                            # rad_hr_dat.append(tdv)
+                            # power limits
+                            pzn_rat_a = [max(min(1 - pwr_slope * pzn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+                            szn_rat_a = [max(min(1 - pwr_slope * szn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
 
-                            # basic power bounding
-                            # pzn_rat_a = [max(min(1 - pwr_slope * prim_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
-                            # szn_rat_a = [max(min(1 - pwr_slope * secd_zn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
-
+                            #the below control calcs use the average of the cases.
+                            
                             # dimming
-                            # rad_hr_dat.extend([rat * tdv for rat in pzn_rat_a])
-                            # rad_hr_dat.extend([rat * tdv for rat in szn_rat_a])
+                            pdim_a = [pdim_a[idx] + curr for idx, curr in enumerate([rat * tdv/2 for rat in pzn_rat_a])]
+                            sdim_a = [sdim_a[idx] + curr for idx, curr in enumerate([rat * tdv/2 for rat in szn_rat_a])]
 
                             # multi-level
-                            # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in pzn_rat_a])
-                            # rad_hr_dat.extend([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv for rat in szn_rat_a])
+                            pmulti_a = [pmulti_a[idx] + curr for idx, curr in enumerate([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv/2 for rat in pzn_rat_a])]
+                            smulti_a = [smulti_a[idx] + curr for idx, curr in enumerate([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv/2 for rat in szn_rat_a])]
 
                             # bi-level
-                            # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in pzn_rat_a])
-                            # rad_hr_dat.extend([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv for rat in szn_rat_a])
+                            pbi_a = [pbi_a[idx] + curr for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv/2 for rat in pzn_rat_a])]
+                            sbi_a = [sbi_a[idx] + curr for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv/2 for rat in szn_rat_a])]
+
+                        #include averaged
+                        rad_hr_dat.extend(pdim_a)
+                        rad_hr_dat.extend(sdim_a)
+                        rad_hr_dat.extend(pmulti_a)
+                        rad_hr_dat.extend(smulti_a)
+                        rad_hr_dat.extend(pbi_a)
+                        rad_hr_dat.extend(sbi_a)
 
                         #append and reset
                         rad_dat.append(rad_hr_dat)

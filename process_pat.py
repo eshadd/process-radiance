@@ -15,22 +15,23 @@ tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors
 setpt_a = [50,  200, 300, 500, 750, 1000]
 
 shade_case_d = {
-    'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0}, 
-    'good': {'threshold': 0.6, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0}
+    'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
+        'shd_run': 0.0, 'pzn_ill': 0, 'szn_ill': 0}, 
+    'good': {'threshold': 0.6, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
+        'shd_run': 'DS', 'pzn_ill': 0, 'szn_ill': 0}
     }
 
 rad_dat_hdr = ['Weather', 'Case', 'Shade', 'Az', 'WWR', 'Ann Hr', 'Day Type', \
-    'Month', 'Day', 'Hr', 'Sensor', 'DGP', 'Bad Shaded?', 'Good Shaded?', '1ry Daylt', '2ry Daylt', 'TDV']
+    '1ry Daylt', '2ry Daylt', 'Month', 'Day', 'Hr', 'Sensor', 'DGP', 'TDV', 'Bad Shaded?', 'Good Shaded?']
 
 pat_db = 'project.osp'
 
 #SETUP
 
 case_hdr_a = []
-for shade_case in (' b', ' g'):
-    for zn in ['1 ', '2 ']:
-        for ctrl in ['Dim', 'Multi', 'Bi']:
-            case_hdr_a.extend([str(sp) + shade_case + zn + ctrl for sp in setpt_a])
+for zn in [' 1 ', ' 2 ']:
+    for ctrl in ['Dim', 'Multi', 'Bi']:
+        case_hdr_a.extend([str(sp) + zn + ctrl for sp in setpt_a])
 
 # Connect to the database file
 pat_db_conn = sqlite3.connect(pat_path + pat_db)
