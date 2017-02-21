@@ -31,11 +31,6 @@ pat_db = 'project.osp'
 
 case_d = {tc: {'none': tc + ' NS', 'good': tc + ' DS'} for tc in tech_case_a}
 
-ctrl_hdr_a = []
-for ctrl in ['Dim', 'Multi', 'Bi']:
-    for zn in [' 1 ', ' 2 ']:
-        ctrl_hdr_a.extend([str(sp) + zn + ctrl for sp in setpt_a])
-
 # Connect to the database file
 pat_db_conn = sqlite3.connect(pat_path + pat_db)
 pat_db_crsr = pat_db_conn.cursor()
@@ -55,7 +50,7 @@ pat_db_conn.close()
 results_by_shd = {}
 for case, run_path_d in run_path_d.items():
     rad_dat = distill_rad_data.run_distillr(case, setpt_a, shade_case_d, run_path_d, wthr_fn, tdv_fref)
-    results_by_shd.setdefault(rad_dat[0], [rad_dat_hdr + ctrl_hdr_a]).extend(rad_dat[1])
+    results_by_shd.setdefault(rad_dat[0], [rad_dat_hdr]).extend(rad_dat[1])
 
 for cz, results in results_by_shd.items():
     if not os.path.exists(out_path):

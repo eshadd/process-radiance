@@ -193,15 +193,6 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, wthr_fn, tdv_fref):
                                 pbi_a = [pbi_a[idx] + curr for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv/2 for rat in pzn_rat_a])]
                                 sbi_a = [sbi_a[idx] + curr for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv/2 for rat in szn_rat_a])]
 
-                            #include averaged
-                            #rad_hr_dat.extend(pdim_a)
-                            #rad_hr_dat.extend(sdim_a)
-                            #rad_hr_dat.extend(pmulti_a)
-                            #rad_hr_dat.extend(smulti_a)
-                            #rad_hr_dat.extend(pbi_a)
-                            #rad_hr_dat.extend(sbi_a)
-
-                            #append and reset
                         spc_info = [wthr_fn, case, spc_az, spc_wwr]
                         rad_dat.extend([spc_info + [1, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(pdim_a)])
                         rad_dat.extend([spc_info + [2, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(sdim_a)])
@@ -209,6 +200,5 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, wthr_fn, tdv_fref):
                         rad_dat.extend([spc_info + [2, 'multi', setpt_a[idx], tdv] for idx, tdv in enumerate(smulti_a)])
                         rad_dat.extend([spc_info + [1, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(pbi_a)])
                         rad_dat.extend([spc_info + [2, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(sbi_a)])
-                            #rad_hr_dat = []
 
     return (cz, rad_dat)
