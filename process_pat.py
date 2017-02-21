@@ -23,8 +23,7 @@ shade_case_d = {
 
 setpt_a = [50,  200, 300, 500, 750, 1000]
 
-rad_dat_hdr = ['Weather', 'Case', 'Az', 'WWR', 'Ann Hr', 'Day Type', \
-    '1ry Daylt', '2ry Daylt', 'Month', 'Day', 'Hr', 'Sensor', 'DGP', 'TDV', 'Bad Shaded?','Good Shaded?']
+rad_dat_hdr = ['Weather', 'Case', 'Az', 'WWR', 'Zone', 'Ctrl', 'Setpt', 'TDV']
 
 pat_db = 'project.osp'
 
