@@ -8,11 +8,12 @@ import os
 
 #INPUT
 
-pat_path = 'E:/05 to 01 Shades - 03/'
+pat_path = 'E:/CL - 09/'
 out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
 tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
-tech_case_a = ['WN', '1.75SL', '2.0SL', '2.5SL', '3.0SL']
+#tech_case_a = ['WN', '1.75SL', '2.0SL', '2.5SL', '3.0SL']
+tech_case_a = ['CL', 'LL']
 
 shade_case_d = {
     'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
@@ -21,7 +22,7 @@ shade_case_d = {
         'unshd_run': 'NS', 'shd_run': 'DS'}
     }
 
-setpt_a = [50,  200, 300, 500, 750, 1000]
+setpt_a = [100,  200, 300, 500, 750, 1000]
 
 rad_dat_hdr = ['Weather', 'Case', 'Az', 'WWR', 'Zone', 'Ctrl', 'Setpt', 'TDV']
 
@@ -49,7 +50,7 @@ pat_db_conn.close()
 
 results_by_shd = {}
 for case, run_path_d in run_path_d.items():
-    rad_dat = distill_rad_data.run_distillr(case, setpt_a, shade_case_d, run_path_d, wthr_fn, tdv_fref)
+    rad_dat = distill_rad_data.run_distillr(case, setpt_a, shade_case_d, run_path_d, pat_path, wthr_fn, tdv_fref)
     results_by_shd.setdefault(rad_dat[0], [rad_dat_hdr]).extend(rad_dat[1])
 
 for cz, results in results_by_shd.items():
