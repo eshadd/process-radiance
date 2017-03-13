@@ -8,12 +8,13 @@ import os
 
 #INPUT
 
-pat_path = 'E:/CL - 09/'
+pat_path = 'E:/El 15 20 25/'
 out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
 tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
 #tech_case_a = ['WN', '1.75SL', '2.0SL', '2.5SL', '3.0SL']
-tech_case_a = ['CL', 'LL']
+tech_case_a = ['15 2.500',  '15 2.000',  '15 1.750',  '15 1.500',  '20 2.125',  '20 1.750',  '20 1.500',  '20 1.375',  '25 1.750',  '25 1.500',  '25 1.375',  '25 1.250']
+#tech_case_a = ['CL', 'LL']
 
 shade_case_d = {
     'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \

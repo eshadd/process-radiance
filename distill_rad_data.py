@@ -35,14 +35,17 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
     for shd_case, run_path in run_path_a.items():
 
         dat_pt = run_path.split('/')[-1]
-        run_idx = int(dat_pt.replace('dataPoint', ''))
-        rad_out_path = pat_path + dat_pt + '/' + str(9 * (run_idx - 1)) + '-Userscript-0/radiance/output/'
+        if dat_pt:
+            run_idx = int(dat_pt.replace('dataPoint', ''))
+            rad_out_path = pat_path + dat_pt + '/' + str(9 * (run_idx - 2) + 1) + '-Userscript-0/radiance/output/'
 
-        ill_dir_d[shd_case] = [ref for ref in os.walk(rad_out_path + 'ts/')][2::2]
+            ill_dir_d[shd_case] = [ref for ref in os.walk(rad_out_path + 'ts/')][2::2]
 
-    ill_fref_a = [[fn_a[0], path + '/' + fn_a[0], path + '/' + fn_a[1]] for path, blank, fn_a in ill_dir_d['none']]
-    if ill_fref_a:
+    ill_fref_a = [[fn_a[0], path + '/' + fn_a[0], path + '/' + fn_a[1]] for path, blank, fn_a in ill_dir_d.get('none', {})]
+    if ill_fref_a and ill_dir_d['good']:
         ill_fref_a = [nsfref + [ill_dir_d['good'][spc_idx][0] + '/' + ill_dir_d['good'][spc_idx][2][1]] for spc_idx, nsfref in enumerate(ill_fref_a)]
+    else:
+        ill_fref_a = []
 
     #rad_set = [wthr_fn, case]
     
