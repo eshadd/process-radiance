@@ -25,11 +25,11 @@ mat_surf =  'skyfunc glow sky_mat\n' + \
             '0\n' + \
             '4\n' + \
             '0 0 1 180\n' + \
-            'void glow groundglow\n' + \
+            'skyfunc glow groundglow\n' + \
             '0\n' + \
             '0\n' + \
             '4\n' + \
-            '1 1 1 0\n' + \
+            '1 .8 .5 0\n' + \
             'groundglow source ground\n' + \
             '0\n' + \
             '0\n' + \
