@@ -5,16 +5,15 @@ import os
 
 #INPUT
 
-wthr_fp = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/Weather/'
+wthr_dir = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/Weather/'
 wthr_fns = ['CZ01.epw', 'CZ02.epw', 'CZ03.epw', 'CZ04.epw', \
             'CZ05.epw', 'CZ06.epw', 'CZ07.epw', 'CZ08.epw', \
             'CZ09.epw', 'CZ10.epw', 'CZ11.epw', 'CZ12.epw', \
             'CZ13.epw', 'CZ14.epw', 'CZ15.epw','CZ16.epw']
-hoy = 0
 
 #SETUP
 
-os.chdir(wthr_fp)
+os.chdir(wthr_dir)
 
 mat_surf =  'skyfunc glow sky_mat\n' + \
             '0\n' + \
@@ -26,16 +25,16 @@ mat_surf =  'skyfunc glow sky_mat\n' + \
             '0\n' + \
             '4\n' + \
             '0 0 1 180\n' + \
-            'skyfunc glow ground_glow\n' + \
+            'void glow groundglow\n' + \
             '0\n' + \
             '0\n' + \
             '4\n' + \
-            '1 .8 .5 0\n' + \
-            'ground_glow source ground\n' + \
+            '1 1 1 0\n' + \
+            'groundglow source ground\n' + \
             '0\n' + \
             '0\n' + \
             '4\n' + \
-            '0 0 -1 180\n'
+            '0 0 -1 180'
 
 #MAIN
 
