@@ -2,10 +2,12 @@
 
 import subprocess
 import os
-from  multiprocessing import pool
+from  multiprocessing import Pool
 import csv
 
 #INPUT
+
+n_processors = 4
 
 #filters
 occ_hrs = [8, 17]
@@ -35,49 +37,58 @@ no_glare = [0, 0, 0, 0, 0]
 
 os.chdir(rad_dir)
 
+def calc_glare_metrics(place):
+    sky_scene_root, az_lbl, wwr = place
+    spc = az_lbl + '_' + wwr
+
+    #get the glare sensor position
+    sensr_fn = [fn for fn in os.listdir('./views') if spc in fn and 'Bad_Glare_Snsr' in fn][0] #finds either vfh or vfv; doesn't matter.
+
+    with open('./views/' + sensr_fn) as f_r:
+        view = f_r.read().split(' ')
+    pos = ' '.join(view[2:14])
+
+    az = float(spc.split('_')[0])
+    az_bounds = [az - 90, az + 90]
+
+    glare_metrics_a = [['dgp', 'dgi', 'ugr', 'vcp', 'cgi']]
+    for hoy in range(1,8761):
+        dow = day_type_a[int(hoy/24) % 7]
+
+        sky_scene_cz_dir = sky_scene_dir + sky_scene_root + '-rad-skies/'
+        sky_scene_fp = sky_scene_cz_dir + '-'.join([sky_scene_root, format(hoy, '04d'), 'sky.rad'])
+
+        with open(sky_scene_fp) as f_r:
+
+            tod = round(float(f_r.readline().split(' ')[4]))
+            f_r.readline()
+            sol_az = float(f_r.readline().split(' ')[6]) + 180
+
+            #only check if it's the right day, time and if direct beam can enter space (e.g. sun's azimuth is in window's view)
+            if dow not in ['Sat', 'Sun'] and tod >= occ_hrs[0] and tod <= occ_hrs[1] and sol_az >= az_bounds[0] and sol_az <= az_bounds[1]:
+                
+                scene_fn = spc + '-scene.oct' 
+                with open(scene_fn, 'wb') as f_w:
+                    f_w.write(subprocess.check_output('oconv materials/materials.rad model.rad ' + '"' + sky_scene_fp + '"'))
+
+                hdr_fn = spc + '-glare.hdr'
+                with open(hdr_fn, 'wb') as f_w:
+                    f_w.write(subprocess.check_output('rpict ' + ' '.join([color, accuracy, res, pos]) + ' -vth -vh 180 -vv 180 ' + scene_fn))
+
+                glare_metrics = subprocess.check_output('evalglare ' + hdr_fn).decode('utf-8').split(' ')[1:6]
+            else:
+                glare_metrics = no_glare
+            glare_metrics_a.append(glare_metrics)
+            print(sky_scene_root + ': ' + spc + ': ' + str(hoy))
+
+    with open('_'.join([sky_scene_root, spc]) + '_WN_UN_beam_glare_metrics.csv', 'w', newline='') as f_w:
+        csv.writer(f_w, dialect='excel').writerows(glare_metrics_a)
+
 #MAIN
 
-for sky_scene_root in sky_scene_root_a:
-    for az_lbl in az_lbl_a:
-        for wwr in wwr_a:
-
-            #get the glare sensor position
-            sensr_spc = az_lbl + '_' + wwr
-            sensr_fn = [fn for fn in os.listdir('./views') if sensr_spc in fn and 'Bad_Glare_Snsr' in fn][0] #finds either vfh or vfv; doesn't matter.
-
-            with open('./views/' + sensr_fn) as f_r:
-                view = f_r.read().split(' ')
-            pos = ' '.join(view[2:14])
-
-            az = float(az_lbl)
-            az_bounds = [az - 90, az + 90]
-
-            glare_metrics_a = [['dgp', 'dgi', 'ugr', 'vcp', 'cgi']]
-            for hoy in range(1,8761):
-                dow = day_type_a[int(hoy/24) % 7]
-
-                sky_scene_cz_dir = sky_scene_dir + sky_scene_root + '-rad-skies/'
-                sky_scene_fp = sky_scene_cz_dir + '-'.join([sky_scene_root, format(hoy, '04d'), 'sky.rad'])
-
-                with open(sky_scene_fp) as f_r:
-
-                    tod = round(float(f_r.readline().split(' ')[4]))
-                    f_r.readline()
-                    sol_az = float(f_r.readline().split(' ')[6]) + 180
-
-                    #only check if it's the right day, time and if direct beam can enter space (e.g. sun's azimuth is in window's view)
-                    if dow not in ['Sat', 'Sun'] and tod >= occ_hrs[0] and tod <= occ_hrs[1] and sol_az >= az_bounds[0] and sol_az <= az_bounds[1]:
-                        with open('scene.oct', 'wb') as f_w:
-                            f_w.write(subprocess.check_output('oconv materials/materials.rad model.rad ' + '"' + sky_scene_fp + '"'))
-
-                        with open('glare.hdr', 'wb') as f_w:
-                            f_w.write(subprocess.check_output('rpict ' + ' '.join([color, accuracy, res, pos]) + ' -vth -vh 180 -vv 180 scene.oct'))
-
-                        glare_metrics = subprocess.check_output('evalglare glare.hdr').decode('utf-8').split(' ')[1:6]
-                    else:
-                        glare_metrics = no_glare
-                    glare_metrics_a.append(glare_metrics)
-                    print(str(hoy))
-
-            with open('_'.join([sky_scene_root, sensr_spc]) + '_WN_UN_beam_glare_metrics.csv', 'w', newline='') as f_w:
-                csv.writer(f_w, dialect='excel').writerows(glare_metrics_a)
+if __name__ == '__main__':
+    with Pool(n_processors) as pool:
+        for sky_scene_root in sky_scene_root_a:
+            place = [[sky_scene_root, az_lbl, wwr] for az_lbl in az_lbl_a for wwr in wwr_a]
+            pool.map(calc_glare_metrics, place)
+            calc_glare_metrics(place[0])
