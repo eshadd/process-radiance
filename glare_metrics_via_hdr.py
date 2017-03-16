@@ -31,7 +31,7 @@ sky_scene_root_a = ['CZ09', 'CZ08', 'CZ03', 'CZ12', \
                     'CZ13', 'CZ16', 'CZ02', 'CZ11', \
                     'CZ14', 'CZ15', 'CZ05','CZ01']
 
-no_glare = [0, 0, 0, 0, 0]
+no_glare = [0, 0, 0, 0, 0, 0]
 
 #SETUP
 
@@ -51,8 +51,8 @@ def calc_glare_metrics(place):
     az = float(spc.split('_')[0])
     az_bounds = [az - 90, az + 90]
 
-    glare_metrics_a = [['dgp', 'dgi', 'ugr', 'vcp', 'cgi']]
-    for hoy in range(1,8761):
+    glare_metrics_a = [['contrast_term', 'dgp', 'dgi', 'ugr', 'vcp', 'cgi']]
+    for hoy in range(1,24):
         dow = day_type_a[int(hoy/24) % 7]
 
         sky_scene_cz_dir = sky_scene_dir + sky_scene_root + '-rad-skies/'
@@ -75,9 +75,19 @@ def calc_glare_metrics(place):
                 with open(hdr_fn, 'wb') as f_w:
                     f_w.write(subprocess.check_output('rpict ' + ' '.join([color, accuracy, res, pos]) + ' -vth -vh 180 -vv 180 ' + scene_fn))
 
-                glare_metrics = subprocess.check_output('evalglare ' + hdr_fn).decode('utf-8').split(' ')[1:6]
+                glare_params = [params.split(' ') for params in subprocess.check_output('evalglare -d ' + hdr_fn).decode('utf-8').replace('\r','').split('\n')][-2]
+                
+                #calc the contrast term contribution and grab specific metrics
+                dgp = float(glare_params[1])
+                vert_eye_illum = float(glare_params[3])
+                contrast_term = max(dgp - vert_eye_illum*.0000587 - 0.16, 0.0)
+
+                glare_metrics = [contrast_term, dgp]
+                glare_metrics.extend(glare_params[6:10])
+
             else:
                 glare_metrics = no_glare
+            
             glare_metrics_a.append(glare_metrics)
             print(sky_scene_root + ': ' + spc + ': ' + str(hoy))
 
@@ -91,4 +101,4 @@ if __name__ == '__main__':
         for sky_scene_root in sky_scene_root_a:
             place = [[sky_scene_root, az_lbl, wwr] for az_lbl in az_lbl_a for wwr in wwr_a]
             pool.map(calc_glare_metrics, place)
-            calc_glare_metrics(place[0])
+            #calc_glare_metrics(place[0])
