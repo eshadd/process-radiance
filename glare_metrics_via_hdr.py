@@ -15,8 +15,8 @@ day_type_a = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed']
     
 #rpict specs
 color = '-av .3 .3 .3'
-accuracy = '-ab 2 -ad 512 -as 256 -dj 1 -dp 1 -dt 0 -dc 1 -lw 0.001'
-res = '-x 50 -y 50'
+accuracy = '-ab 0 -ad 512 -as 256 -dj 1 -dp 1 -dt 0 -dc 1 -lw 0.001'
+res = '-x 100 -y 100'
 
 #model specs
 az_lbl_a = ['090', '180', '270']
@@ -52,7 +52,7 @@ def calc_glare_metrics(place):
     az_bounds = [az - 90, az + 90]
 
     glare_metrics_a = [['contrast_term', 'dgp', 'dgi', 'ugr', 'vcp', 'cgi']]
-    for hoy in range(1,24):
+    for hoy in range(1,8761):
         dow = day_type_a[int(hoy/24) % 7]
 
         sky_scene_cz_dir = sky_scene_dir + sky_scene_root + '-rad-skies/'
@@ -85,11 +85,12 @@ def calc_glare_metrics(place):
                 glare_metrics = [contrast_term, dgp]
                 glare_metrics.extend(glare_params[6:10])
 
+                print(sky_scene_root + ' ' + spc + ' ' + str(hoy))
+                print('dgp: ' + format(dgp, '.2f') + ' contrast term: ' + format(contrast_term, '.2f'))
             else:
                 glare_metrics = no_glare
             
             glare_metrics_a.append(glare_metrics)
-            print(sky_scene_root + ': ' + spc + ': ' + str(hoy))
 
     with open('_'.join([sky_scene_root, spc]) + '_WN_UN_beam_glare_metrics.csv', 'w', newline='') as f_w:
         csv.writer(f_w, dialect='excel').writerows(glare_metrics_a)
