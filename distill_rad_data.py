@@ -8,6 +8,10 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
 
     #INPUT
 
+    #head heights by WWR
+    #ill map funky so numbers are funky.
+    hh_by_wwr_d = {'10': [4, 18, 32], '20': [2, 16, 30], '30': [2, 18, 34], '40': [2, 18, 34]}
+
     nglr_hdr_rows = 3
     nmap_hdr_rows = 4
     ntdv_hdr_rows = 3
