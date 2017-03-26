@@ -93,13 +93,10 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                             shade_case_d[shd_case]['shaded_hrs'] = 0
 
                         #init ctrl TDV
-                        ctrl_init = [0 for sp in setpt_a]
-                        pdim_a = ctrl_init
-                        sdim_a = ctrl_init
-                        pmulti_a = ctrl_init
-                        smulti_a = ctrl_init
-                        pbi_a = ctrl_init
-                        sbi_a = ctrl_init
+                        ctrl_init = [[0 for sp in setpt_a] for zn in range(len(hh_by_wwr_d['10']))]
+                        dim_by_zn_by_sp_a = ctrl_init
+                        multi_by_zn_by_sp_a = ctrl_init
+                        bi_by_zn_by_sp_a = ctrl_init
 
                         #aggregate data
                         for ann_hr_idx, glr_rw in enumerate(glr_rdr):
@@ -116,14 +113,16 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
 
                             #sensors
                             map_a = next(map_rdr)
-                            prim_zn_ill = float(map_a[6])
-                            secd_zn_ill = float(map_a[-1])
+                            hh_ill_a = [float(map_a[hh + 5]) for hh in hh_by_wwr_d[spc_wwr]]
+                            # prim_zn_ill = float(map_a[6])
+                            # secd_zn_ill = float(map_a[-1])
                             #rad_hr_dat.append(prim_zn_ill)
                             #rad_hr_dat.append(secd_zn_ill)
 
                             gd_shd_map = next(gd_shd_map_rdr)
-                            gd_shd_pzn_ill = float(gd_shd_map[6])
-                            gd_shd_szn_ill = float(gd_shd_map[-1])
+                            gd_shd_hh_ill_a = [float(gd_shd_map[hh + 5]) for hh in hh_by_wwr_d[spc_wwr]]
+                            # gd_shd_pzn_ill = float(gd_shd_map[6])
+                            # gd_shd_szn_ill = float(gd_shd_map[-1])
 
                             #glare
                             #rad_hr_dat.extend(glr_rw[:5])
@@ -145,68 +144,62 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                                         shading['shaded'] = 1
                                         shading['shaded_hrs'] += 1
                                         if shd_case == 'bad':
-                                            pzn_ill = 0.0
-                                            szn_ill = 0.0
+                                            case_hh_ill_a = [0.0 for ill in hh_ill_a]
                                         else:
-                                            pzn_ill = gd_shd_pzn_ill
-                                            szn_ill = gd_shd_szn_ill
+                                            case_hh_ill_a = gd_shd_hh_ill_a
                                     else:
                                         #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
                                         if shading['shaded'] == 0 or (shading['shaded_hrs'] >= shading['min_period'] and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in shading['check_times']):
                                             shading['shaded'] = 0
                                             shading['shaded_hrs'] = 0
-                                            pzn_ill = prim_zn_ill
-                                            szn_ill = secd_zn_ill
+                                            case_hh_ill_a = hh_ill_a
                                         else:
                                             shading['shaded'] = 1
                                             shading['shaded_hrs'] += 1
                                             if shd_case == 'bad':
-                                                pzn_ill = 0.0
-                                                szn_ill = 0.0
+                                                case_hh_ill_a = [0.0 for ill in hh_ill_a]
                                             else:
-                                                pzn_ill = gd_shd_pzn_ill
-                                                szn_ill = gd_shd_szn_ill
+                                                case_hh_ill_a = gd_shd_hh_ill_a
                                 else:
                                     if shading['shaded'] == 1:
                                         shading['shaded_hrs'] +=1
                                         if shd_case == 'bad':
-                                            pzn_ill = 0.0
-                                            szn_ill = 0.0
+                                            case_hh_ill_a = [0.0 for ill in hh_ill_a]
                                         else:
-                                            pzn_ill = gd_shd_pzn_ill
-                                            szn_ill = gd_shd_szn_ill
+                                            case_hh_ill_a = gd_shd_hh_ill_a
                                     else:
                                         shading['shaded'] = 0
                                         shading['shaded_hrs'] = 0
-                                        pzn_ill = prim_zn_ill
-                                        szn_ill = secd_zn_ill
+                                        case_hh_ill_a = hh_ill_a
 
                                 #rad_hr_dat.append(shading['shaded'])
 
                                 # power limits
-                                pzn_rat_a = [max(min(1 - pwr_slope * pzn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
-                                szn_rat_a = [max(min(1 - pwr_slope * szn_ill/sp, 1), min_lamp_pwr) for sp in setpt_a]
+                                rat_by_zn_by_sp_a = [[max(min(1 - pwr_slope * case_hh_ill/sp, 1), min_lamp_pwr) for sp in setpt_a] for case_hh_ill in case_hh_ill_a]
 
-                                #the below control calcs use the average of the cases.
+                                #the below control calcs use the average of the cases by adding 1/2 the cases energy in each loop.
                             
                                 # dimming
-                                pdim_a = [pdim_a[idx] + curr for idx, curr in enumerate([rat * tdv/2 for rat in pzn_rat_a])]
-                                sdim_a = [sdim_a[idx] + curr for idx, curr in enumerate([rat * tdv/2 for rat in szn_rat_a])]
+                                dim_by_zn_by_sp_a = [[dim_by_zn_by_sp_a[zn][idx] + curr \
+                                    for idx, curr in enumerate([zn_rat_by_sp * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
+                                        for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                                 # multi-level
-                                pmulti_a = [pmulti_a[idx] + curr for idx, curr in enumerate([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv/2 for rat in pzn_rat_a])]
-                                smulti_a = [smulti_a[idx] + curr for idx, curr in enumerate([multi_level_a[bs.bisect_left(multi_level_a, rat)] * tdv/2 for rat in szn_rat_a])]
+                                multi_by_zn_by_sp_a = [[multi_by_zn_by_sp_a[zn][idx] + curr \
+                                    for idx, curr in enumerate([multi_level_a[bs.bisect_left(multi_level_a, zn_rat_by_sp)] * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
+                                        for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                                 # bi-level
-                                pbi_a = [pbi_a[idx] + curr for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv/2 for rat in pzn_rat_a])]
-                                sbi_a = [sbi_a[idx] + curr for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, rat)] * tdv/2 for rat in szn_rat_a])]
+                                bi_by_zn_by_sp_a = [[bi_by_zn_by_sp_a[zn][idx] + curr \
+                                    for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, zn_rat_by_sp)] * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
+                                        for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                         spc_info = [wthr_fn, case, spc_az, spc_wwr]
-                        rad_dat.extend([spc_info + [1, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(pdim_a)])
-                        rad_dat.extend([spc_info + [2, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(sdim_a)])
-                        rad_dat.extend([spc_info + [1, 'multi', setpt_a[idx], tdv] for idx, tdv in enumerate(pmulti_a)])
-                        rad_dat.extend([spc_info + [2, 'multi', setpt_a[idx], tdv] for idx, tdv in enumerate(smulti_a)])
-                        rad_dat.extend([spc_info + [1, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(pbi_a)])
-                        rad_dat.extend([spc_info + [2, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(sbi_a)])
+                        for zn, zn_dim_by_sp_a in enumerate(dim_by_zn_by_sp_a):
+                            rad_dat.extend([spc_info + [zn + 1, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_dim_by_sp_a)])
+                        for zn, zn_multi_by_sp_a in enumerate(multi_by_zn_by_sp_a):
+                            rad_dat.extend([spc_info + [zn + 1, 'multi', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_multi_by_sp_a)])
+                        for zn, zn_bi_by_sp in enumerate(bi_by_zn_by_sp_a):
+                            rad_dat.extend([spc_info + [zn + 1, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_bi_by_sp)])
 
     return (cz, rad_dat)

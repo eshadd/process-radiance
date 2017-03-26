@@ -8,13 +8,13 @@ import os
 
 #INPUT
 
-pat_path = 'E:/El 15 20 25/'
-out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
-tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
+pat_path = 'C:/Test Lab/Fixed Slats 00 09/'
+out_path = 'C:/Test Lab/Output/'
+tdv_fref = 'C:/Test Lab/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
-#tech_case_a = ['WN', '1.75SL', '2.0SL', '2.5SL', '3.0SL']
-tech_case_a = ['15 2.500',  '15 2.000',  '15 1.750',  '15 1.500',  '20 2.125',  '20 1.750',  '20 1.500',  '20 1.375',  '25 1.750',  '25 1.500',  '25 1.375',  '25 1.250']
-#tech_case_a = ['CL', 'LL']
+run_d = ['90 WN 90 WN', '10 1.750 25 1.250']#, '2.0SL', '2.5SL', '3.0SL']
+#run_d = ['15 2.500',  '15 2.000',  '15 1.750',  '15 1.500',  '20 2.125',  '20 1.750',  '20 1.500',  '20 1.375',  '25 1.750',  '25 1.500',  '25 1.375',  '25 1.250']
+#run_d = ['CL', 'LL']
 
 shade_case_d = {
     'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
@@ -31,7 +31,7 @@ pat_db = 'project.osp'
 
 #SETUP
 
-case_d = {tc: {'none': tc + ' NS', 'good': tc + ' DS'} for tc in tech_case_a}
+case_d = {tc: {'none': tc + ' NS', 'good': tc + ' DS'} for tc in run_d}
 
 # Connect to the database file
 pat_db_conn = sqlite3.connect(pat_path + pat_db)
