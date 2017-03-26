@@ -10,7 +10,7 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
 
     #head heights by WWR
     #ill map funky so numbers are funky.
-    hh_by_wwr_d = {'10': [4, 18, 32], '20': [2, 16, 30], '30': [2, 18, 34], '40': [2, 18, 34]}
+    hh_by_wwr_d = {'10': [4, 18, 32], '20': [4, 18, 32], '30': [4, 20, 36], '40': [2, 18, 34]}
 
     nglr_hdr_rows = 3
     nmap_hdr_rows = 4
@@ -41,7 +41,10 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
         dat_pt = run_path.split('/')[-1]
         if dat_pt:
             run_idx = int(dat_pt.replace('dataPoint', ''))
-            rad_out_path = pat_path + dat_pt + '/' + str(9 * (run_idx - 2) + 1) + '-Userscript-0/radiance/output/'
+            dat_pt_path = pat_path + dat_pt + '/'
+            usr_script_path_a = [dat_pt_path + subdir + '/' for subdir in next(os.walk(dat_pt_path))[1] if 'UserScript' in subdir]
+            usr_script_path_subdirs_a = [next(os.walk(usr_script_path)) for usr_script_path in usr_script_path_a]
+            rad_out_path = [subdir[0] for subdir in usr_script_path_subdirs_a if 'radiance' in subdir[1]][0] + 'radiance/output/'
 
             ill_dir_d[shd_case] = [ref for ref in os.walk(rad_out_path + 'ts/')][2::2]
 
