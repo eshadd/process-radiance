@@ -8,24 +8,25 @@ import os
 
 #INPUT
 
-pat_path = 'E:/Fixed Slats 00 03/'
-out_path = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Output/'
-tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
+pat_path = 'C:/Test Lab/Fixed Slats 00 09/'
+out_path = 'C:/Test Lab/Output/'
+tdv_fref = 'C:/Test Lab/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
 run_d = ['90 WN 90 WN', '10 3.500 25 1.750', '10 2.500 25 1.500', '10 2.000 25 1.375', '10 1.750 25 1.250', '15 2.500 30 1.500', '15 2.000 30 1.375', '15 1.750 30 1.250', '15 1.500 30 1.125', '20 2.125 35 1.375', '20 1.750 35 1.250', '20 1.500 35 1.125', '20 1.375 35 1.050', '25 1.750 40 1.250', '25 1.500 40 1.125', '25 1.375 40 1.050', '25 1.250 40 1.000']
-#run_d = ['15 2.500',  '15 2.000',  '15 1.750',  '15 1.500',  '20 2.125',  '20 1.750',  '20 1.500',  '20 1.375',  '25 1.750',  '25 1.500',  '25 1.375',  '25 1.250']
-#run_d = ['CL', 'LL']
+#run_d = ['90 CL 90 CL', '90 LL 90 LL']
 
 shade_case_d = {
-    'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
+    'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], \
+        'shaded': 0, 'shaded_hrs': 0, 'tot_shaded_hrs': 0, \
         'unshd_run': 'NS', 'shd_run': 0.0}, 
-    'good': {'threshold': 0.6, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], 'shaded': 0, 'shaded_hrs': 0, \
+    'good': {'threshold': 0.6, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], \
+        'shaded': 0, 'shaded_hrs': 0, 'tot_shaded_hrs': 0, \
         'unshd_run': 'NS', 'shd_run': 'DS'}
     }
 
 setpt_a = [100,  200, 300, 500, 750, 1000]
 
-rad_dat_hdr = ['Weather', 'Case', 'Az', 'WWR', 'Zone', 'Ctrl', 'Setpt', 'TDV']
+rad_dat_hdr = ['Weather', 'Case', 'Az', 'WWR', 'Bad Shade Hrs', 'Good Shade Hrs', 'Zone', 'Ctrl', 'Setpt', 'TDV']
 
 pat_db = 'project.osp'
 

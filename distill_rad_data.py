@@ -146,6 +146,7 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                                     if dgp > shading['threshold']:
                                         shading['shaded'] = 1
                                         shading['shaded_hrs'] += 1
+                                        shading['tot_shaded_hrs'] += 1
                                         if shd_case == 'bad':
                                             case_hh_ill_a = [0.0 for ill in hh_ill_a]
                                         else:
@@ -159,6 +160,7 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                                         else:
                                             shading['shaded'] = 1
                                             shading['shaded_hrs'] += 1
+                                            shading['tot_shaded_hrs'] += 1
                                             if shd_case == 'bad':
                                                 case_hh_ill_a = [0.0 for ill in hh_ill_a]
                                             else:
@@ -166,6 +168,7 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                                 else:
                                     if shading['shaded'] == 1:
                                         shading['shaded_hrs'] +=1
+                                        shading['tot_shaded_hrs'] += 1
                                         if shd_case == 'bad':
                                             case_hh_ill_a = [0.0 for ill in hh_ill_a]
                                         else:
@@ -198,11 +201,22 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                                         for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                         spc_info = [wthr_fn, case, spc_az, spc_wwr]
+                        tot_shade_hrs_by_case = [shade_case_d[shd_case]['tot_shaded_hrs'] for shd_case in ['bad', 'good']]
+
                         for zn, zn_dim_by_sp_a in enumerate(dim_by_zn_by_sp_a):
-                            rad_dat.extend([spc_info + [zn + 1, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_dim_by_sp_a)])
+                            rad_dat.extend([spc_info + tot_shade_hrs_by_case + \
+                                [zn + 1, 'dim', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_dim_by_sp_a)])
+
                         for zn, zn_multi_by_sp_a in enumerate(multi_by_zn_by_sp_a):
-                            rad_dat.extend([spc_info + [zn + 1, 'multi', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_multi_by_sp_a)])
+                            rad_dat.extend([spc_info + tot_shade_hrs_by_case + \
+                                [zn + 1, 'multi', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_multi_by_sp_a)])
+                                
                         for zn, zn_bi_by_sp in enumerate(bi_by_zn_by_sp_a):
-                            rad_dat.extend([spc_info + [zn + 1, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_bi_by_sp)])
+                            rad_dat.extend([spc_info + tot_shade_hrs_by_case + \
+                                [zn + 1, 'bi', setpt_a[idx], tdv] for idx, tdv in enumerate(zn_bi_by_sp)])
+
+                        # reset
+                        shade_case_d['bad']['tot_shaded_hrs'] = 0
+                        shade_case_d['good']['tot_shaded_hrs'] = 0
 
     return (cz, rad_dat)
