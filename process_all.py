@@ -5,6 +5,9 @@ import csv
 
 #INPUT
 
+pat_path_a = ['C:/Test Lab/Clerestory 00 '+ format(cz,'02d') +'/' for cz in [4]]
+out_path = out_path = 'C:/Test Lab/Output/'
+
 merge_dir = 'C:/Test Lab/Output/'
 merged_results_fn = 'merged_results.csv'
 
