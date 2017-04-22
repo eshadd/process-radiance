@@ -8,7 +8,7 @@ import os
 
 #INPUT
 
-def process_pat(pat_path, run_d, out_path):
+def process_pat(pat_path, run_a, sensor_grid_d, out_path):
 
     tdv_fref = 'C:/Determinant_J/Projects/T2419 CASE/Analysis/Input/2019 TDV Factors-V2-02.13.2017 - NRE30.csv'
 
@@ -30,7 +30,7 @@ def process_pat(pat_path, run_d, out_path):
 
     #SETUP
 
-    case_d = {tc: {'none': tc + ' NS', 'good': tc + ' DS'} for tc in run_d}
+    case_d = {tc: {'none': tc + ' NS', 'good': tc + ' DS'} for tc in run_a}
 
     # Connect to the database file
     pat_db_conn = sqlite3.connect(pat_path + pat_db)
@@ -50,7 +50,7 @@ def process_pat(pat_path, run_d, out_path):
 
     results_by_shd = {}
     for case, run_path_d in run_path_d.items():
-        rad_dat = distill_rad_data.run_distillr(case, setpt_a, shade_case_d, run_path_d, pat_path, wthr_fn, tdv_fref)
+        rad_dat = distill_rad_data.run_distillr(case, setpt_a, sensor_grid_d, shade_case_d, run_path_d, pat_path, wthr_fn, tdv_fref)
         results_by_shd.setdefault(rad_dat[0], [rad_dat_hdr]).extend(rad_dat[1])
 
     for cz, results in results_by_shd.items():

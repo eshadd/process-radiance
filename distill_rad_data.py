@@ -4,13 +4,9 @@ import sqlite3
 import os
 import bisect as bs
 
-def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv_fref):
+def run_distillr(case, setpt_a, sensor_grid_d, shade_case_d, run_path_a, pat_path, wthr_fn, tdv_fref):
 
     #INPUT
-
-    #head heights by WWR
-    #ill map funky so numbers are funky.
-    hh_by_wwr_d = {'10': [4, 18, 32], '20': [4, 18, 32], '30': [4, 20, 36], '40': [2, 18, 34]}
 
     nglr_hdr_rows = 3
     nmap_hdr_rows = 4
@@ -21,8 +17,8 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
     min_lamp_pwr = 0.2
     pwr_slope = 1
     #Table 130.1-A 2016
-    def cont_dim_rat_in(ill_out_rat):
-        return max(0.2, 0.8427*illum + 0.1753)
+    def dim_rat_in(ill_rat_out):
+        return max(0.2, 0.8247*illum + 0.1753)
     multi_lvl_in_a = [0.4, 0.7, 0.85, 1]
     multi_lvl_out_a = [0.25, 0.5, 0.75, 1]
     bi_lvl_in_a = [0.7, 1]
@@ -100,7 +96,7 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                             shade_case_d[shd_case]['shaded_hrs'] = 0
 
                         #init ctrl TDV
-                        ctrl_init = [[0 for sp in setpt_a] for zn in range(len(hh_by_wwr_d['10']))]
+                        ctrl_init = [[0 for sp in setpt_a] for zn in range(len(sensor_grid_d['10']))]
                         dim_by_zn_by_sp_a = ctrl_init
                         multi_by_zn_by_sp_a = ctrl_init
                         bi_by_zn_by_sp_a = ctrl_init
@@ -120,14 +116,14 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
 
                             #sensors
                             map_a = next(map_rdr)
-                            hh_ill_a = [float(map_a[hh + 5]) for hh in hh_by_wwr_d[spc_wwr]]
+                            sensor_ill_a = [float(map_a[grid + 5]) for grid in sensor_grid_d[spc_wwr]]
                             # prim_zn_ill = float(map_a[6])
                             # secd_zn_ill = float(map_a[-1])
                             #rad_hr_dat.append(prim_zn_ill)
                             #rad_hr_dat.append(secd_zn_ill)
 
                             gd_shd_map = next(gd_shd_map_rdr)
-                            gd_shd_hh_ill_a = [float(gd_shd_map[hh + 5]) for hh in hh_by_wwr_d[spc_wwr]]
+                            gd_shd_sensor_ill_a = [float(gd_shd_map[grid + 5]) for grid in sensor_grid_d[spc_wwr]]
                             # gd_shd_pzn_ill = float(gd_shd_map[6])
                             # gd_shd_szn_ill = float(gd_shd_map[-1])
 
@@ -152,46 +148,46 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
                                         shading['shaded_hrs'] += 1
                                         shading['tot_shaded_hrs'] += 1
                                         if shd_case == 'bad':
-                                            case_hh_ill_a = [0.0 for ill in hh_ill_a]
+                                            case_sensor_ill_a = [0.0 for ill in sensor_ill_a]
                                         else:
-                                            case_hh_ill_a = gd_shd_hh_ill_a
+                                            case_sensor_ill_a = gd_shd_sensor_ill_a
                                     else:
                                         #if not glarey now, then if unshaded on last loop, or shaded but is now time to check...
                                         if shading['shaded'] == 0 or (shading['shaded_hrs'] >= shading['min_period'] and day_type not in ['Sat', 'Sun', 'Hol'] and time_of_day in shading['check_times']):
                                             shading['shaded'] = 0
                                             shading['shaded_hrs'] = 0
-                                            case_hh_ill_a = hh_ill_a
+                                            case_sensor_ill_a = sensor_ill_a
                                         else:
                                             shading['shaded'] = 1
                                             shading['shaded_hrs'] += 1
                                             shading['tot_shaded_hrs'] += 1
                                             if shd_case == 'bad':
-                                                case_hh_ill_a = [0.0 for ill in hh_ill_a]
+                                                case_sensor_ill_a = [0.0 for ill in sensor_ill_a]
                                             else:
-                                                case_hh_ill_a = gd_shd_hh_ill_a
+                                                case_sensor_ill_a = gd_shd_sensor_ill_a
                                 else:
                                     if shading['shaded'] == 1:
                                         shading['shaded_hrs'] +=1
                                         shading['tot_shaded_hrs'] += 1
                                         if shd_case == 'bad':
-                                            case_hh_ill_a = [0.0 for ill in hh_ill_a]
+                                            case_sensor_ill_a = [0.0 for ill in sensor_ill_a]
                                         else:
-                                            case_hh_ill_a = gd_shd_hh_ill_a
+                                            case_sensor_ill_a = gd_shd_sensor_ill_a
                                     else:
                                         shading['shaded'] = 0
                                         shading['shaded_hrs'] = 0
-                                        case_hh_ill_a = hh_ill_a
+                                        case_sensor_ill_a = sensor_ill_a
 
                                 #rad_hr_dat.append(shading['shaded'])
 
                                 # power limits
-                                rat_by_zn_by_sp_a = [[max(min(1 - pwr_slope * case_hh_ill/sp, 1), min_lamp_pwr) for sp in setpt_a] for case_hh_ill in case_hh_ill_a]
+                                rat_by_zn_by_sp_a = [[max(min(1 - pwr_slope * case_sensor_ill/sp, 1), min_lamp_pwr) for sp in setpt_a] for case_sensor_ill in case_sensor_ill_a]
 
                                 #the below control calcs use the average of the cases by adding 1/2 the cases energy in each loop.
                             
                                 # dimming
                                 dim_by_zn_by_sp_a = [[dim_by_zn_by_sp_a[zn][idx] + curr \
-                                    for idx, curr in enumerate([zn_rat_by_sp * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
+                                    for idx, curr in enumerate([dim_rat_in(zn_rat_by_sp) * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
                                         for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                                 # multi-level
