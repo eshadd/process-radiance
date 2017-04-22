@@ -14,10 +14,10 @@ def process_pat(pat_path, run_d, out_path):
 
     #TEMP
     shade_case_d = {
-        'bad': {'threshold': 100, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], \
+        'bad': {'threshold': 0.4, 'min_period': 21*24, 'check_times': [8], 'occ_hrs': [8, 17], \
             'shaded': 0, 'shaded_hrs': 0, 'tot_shaded_hrs': 0, \
             'unshd_run': 'NS', 'shd_run': 0.0}, 
-        'good': {'threshold': 100, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], \
+        'good': {'threshold': 0.6, 'min_period': 1, 'check_times': [8, 12], 'occ_hrs': [8, 17], \
             'shaded': 0, 'shaded_hrs': 0, 'tot_shaded_hrs': 0, \
             'unshd_run': 'NS', 'shd_run': 'DS'}
         }

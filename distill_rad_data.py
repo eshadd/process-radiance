@@ -21,8 +21,12 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
     min_lamp_pwr = 0.2
     pwr_slope = 1
     #Table 130.1-A 2016
-    multi_level_a = [min_lamp_pwr, 0.4, 0.7, 0.85, 1]
-    bi_level_a = [min_lamp_pwr, 0.7, 1]
+    def cont_dim_rat_in(ill_out_rat):
+        return max(0.2, 0.8427*illum + 0.1753)
+    multi_lvl_in_a = [0.4, 0.7, 0.85, 1]
+    multi_lvl_out_a = [0.25, 0.5, 0.75, 1]
+    bi_lvl_in_a = [0.7, 1]
+    bi_lvl_out_a = [0.5, 1]
 
     #office sched
     day_type_ltg_sched = {'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 1, 'Sun': 2}
@@ -192,12 +196,12 @@ def run_distillr(case, setpt_a, shade_case_d, run_path_a, pat_path, wthr_fn, tdv
 
                                 # multi-level
                                 multi_by_zn_by_sp_a = [[multi_by_zn_by_sp_a[zn][idx] + curr \
-                                    for idx, curr in enumerate([multi_level_a[bs.bisect_left(multi_level_a, zn_rat_by_sp)] * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
+                                    for idx, curr in enumerate([multi_lvl_in_a[bs.bisect_left(multi_lvl_out_a, zn_rat_by_sp)] * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
                                         for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                                 # bi-level
                                 bi_by_zn_by_sp_a = [[bi_by_zn_by_sp_a[zn][idx] + curr \
-                                    for idx, curr in enumerate([bi_level_a[bs.bisect_left(bi_level_a, zn_rat_by_sp)] * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
+                                    for idx, curr in enumerate([bi_lvl_in_a[bs.bisect_left(bi_lvl_out_a, zn_rat_by_sp)] * tdv/2 for zn_rat_by_sp in zn_rat_by_sp_a])] \
                                         for zn, zn_rat_by_sp_a in enumerate(rat_by_zn_by_sp_a)]
 
                         spc_info = [wthr_fn, case, spc_az, spc_wwr]
